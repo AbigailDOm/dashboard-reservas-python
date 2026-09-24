@@ -194,15 +194,19 @@ if archivo_subido is not None:
     col_hora, col_dia = st.columns(2)
 
     with col_hora:
-        rep_hora = generar_reporte_por_hora_cerrada(df_filtrado)
+        # Generamos el reporte y renombramos las columnas para estandarizar las etiquetas a 'Asiste' y 'No Asiste'
+        rep_hora = generar_reporte_por_hora_cerrada(df_filtrado).rename(
+            columns={'Atendidos': 'Asiste', 'Inasistencias': 'No Asiste'}
+        )
+
         fig_hora = px.bar(
             rep_hora,
             x='Hora_Bloque',
             y=['Asiste', 'No Asiste'],
             title="Asistencias e Inasistencias por Bloque Horario",
             barmode='stack',
-            color_discrete_sequence=[SECONDARY_INDIGO, PRIMARY_CYAN],
-            labels={'value': 'Cantidad de Citas', 'Hora_Bloque': 'Hora'}
+            color_discrete_map={'Asiste': SECONDARY_INDIGO, 'No Asiste': PRIMARY_CYAN},
+            labels={'value': 'Cantidad de Citas', 'Hora_Bloque': 'Hora', 'variable': 'Estado'}
         )
         fig_hora.update_layout(
             paper_bgcolor='rgba(0,0,0,0)',
@@ -223,7 +227,8 @@ if archivo_subido is not None:
             title="Demanda por Día de la Semana",
             barmode='group',
             color_discrete_map={'Asiste': SECONDARY_INDIGO, 'No Asiste': PRIMARY_CYAN},
-            category_orders={'Dia_Semana': dias_ordenados}
+            category_orders={'Dia_Semana': dias_ordenados},
+            labels={'Citas': 'Cantidad de Citas', 'Dia_Semana': 'Día', 'Asistencia': 'Estado'}
         )
         fig_dia.update_layout(
             paper_bgcolor='rgba(0,0,0,0)',
