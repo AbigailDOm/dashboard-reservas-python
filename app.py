@@ -96,13 +96,16 @@ st.sidebar.header("Cargar Datos")
 archivo_subido = st.sidebar.file_uploader("Sube el archivo Excel (.xlsx)", type=["xlsx"])
 
 if archivo_subido is not None:
-    # Reiniciar la posición del buffer del archivo subido
+    # 1. Cargar y Transformar Datos (Forzamos la re-evaluación directa sin caché)
     archivo_subido.seek(0)
-
-    # 1. Cargar y Transformar Datos
     df = cargar_y_convertir_excel(archivo_subido)
+
+    # Se genera el dataframe procesado directamente
     df_procesado = agregar_columnas_calculadas(df)
 
+    df_procesado['Hora_Bloque'] = df_procesado['Hora_Corta'].apply(
+        lambda h: f"{int(h):02d}:00" if pd.notnull(h) else "N/A"
+    )
     # 2. Sidebar Filtros Operativos
     st.sidebar.header("Filtros Operativos")
 
@@ -158,11 +161,13 @@ if archivo_subido is not None:
         use_container_width=True
     )
 
-    # 3. Tarjetas KPIs (Lógica directa de filtrado)
+    # 3. Tarjetas KPIs (Alineación 100% exacta con reservas_procesadas)
     st.subheader("Indicadores Clave")
     col1, col2, col3, col4, col5 = st.columns(5)
 
     total_reservas = len(df_filtrado)
+
+    # La fuente de verdad única es la columna 'Asistencia'
     total_asistencias = (df_filtrado['Asistencia'] == 'Asiste').sum()
     total_inasistencias = (df_filtrado['Asistencia'] == 'No Asiste').sum()
 
