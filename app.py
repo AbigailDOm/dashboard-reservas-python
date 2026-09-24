@@ -50,23 +50,33 @@ DANGER_RED = "#FF6B6B"
 st.markdown("""
     <style>
     <style>
-    /* Ocultar únicamente el botón de GitHub, Share y Star del header */
-    .stAppHeader [data-testid="stToolbar"] {
-        visibility: hidden;
-    }
-    
-    /* Ocultar el pie de página ("Made with Streamlit") */
-    footer {
-        visibility: hidden;
+    /* 1. Ocultar la barra flotante inferior con tu foto de perfil (App Status / Viewer Badge) */
+    [data-testid="stStatusWidget"],
+    .viewerBadge_container__1QSob,
+    .viewerBadge_link__1S137,
+    [class*="viewerBadge"] {
+        display: none !important;
+        visibility: hidden !important;
     }
 
-    /* Asegurar que el botón de desplegar la Sidebar (flecha >) siga visible */
+    /* 2. Ocultar los botones superiores de Fork, GitHub y opciones externas */
+    .stAppHeader [data-testid="stToolbar"] {
+        display: none !important;
+    }
+    
+    /* 3. Ocultar el pie de página por defecto */
+    footer {
+        display: none !important;
+    }
+
+    /* 4. MANTENER VISIBLE únicamente el botón de la barra lateral (flecha >>) */
     [data-testid="stSidebarCollapseButton"],
     [data-testid="stSidebarExpandButton"] {
+        display: flex !important;
         visibility: visible !important;
     }
     
-    /* 1. Fondo e interfaz adaptable de tarjetas KPI */
+    /* 5. Fondo e interfaz adaptable de tarjetas KPI */
     [data-testid="stMetric"] {
         background-color: var(--background-secondary-color) !important;
         padding: 18px;
@@ -75,7 +85,7 @@ st.markdown("""
         border: 1px solid rgba(128, 128, 128, 0.2) !important;
     }
 
-    /* 2. Color dinámico de etiquetas (Títulos de los KPIs) */
+    /* 6. Color dinámico de etiquetas (Títulos de los KPIs) */
     [data-testid="stMetricLabel"] label, 
     [data-testid="stMetricLabel"] p,
     [data-testid="stMetricLabel"] span {
@@ -84,7 +94,7 @@ st.markdown("""
         font-size: 14px !important;
     }
 
-    /* 3. Color dinámico de los valores numéricos */
+    /* 7. Color dinámico de los valores numéricos */
     [data-testid="stMetricValue"] div, 
     [data-testid="stMetricValue"] p,
     [data-testid="stMetricValue"] span {
@@ -92,7 +102,7 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* 4. Estilo de las pestañas */
+    /* 8. Estilo de las pestañas */
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px;
         padding: 8px 16px;
