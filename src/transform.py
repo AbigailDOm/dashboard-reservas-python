@@ -18,6 +18,15 @@ def agregar_columnas_calculadas(df: pd.DataFrame) -> pd.DataFrame:
     df['Fecha_Formato'] = df['Fecha de realización'].dt.strftime('%d/%m/%Y %H:%M')
     df['Dia_Numero'] = df['Fecha de realización'].dt.strftime('%d')
 
+    # Mes en texto en español y número para ordenar
+    meses_espanol = {
+        1: 'enero', 2: 'febrero', 3: 'marzo', 4: 'abril',
+        5: 'mayo', 6: 'junio', 7: 'julio', 8: 'agosto',
+        9: 'septiembre', 10: 'octubre', 11: 'noviembre', 12: 'diciembre'
+    }
+    df['Mes_Num'] = df['Fecha de realización'].dt.month
+    df['Mes_Texto'] = df['Mes_Num'].map(meses_espanol)
+
     dias_espanol = {
         'Monday': 'lunes', 'Tuesday': 'martes', 'Wednesday': 'miércoles',
         'Thursday': 'jueves', 'Friday': 'viernes', 'Saturday': 'sábado', 'Sunday': 'domingo'

@@ -92,38 +92,29 @@ st.markdown("""
 st.title("Panel Analítico de Reservas IMO")
 st.markdown("Visualiza y analiza la atención médica por Prestador, Servicio, Canal de Origen y Horarios.")
 
-# Sidebar
-st.sidebar.header("Cargar Datos")
-archivo_subido = st.sidebar.file_uploader("Sube el archivo Excel (.xlsx)", type=["xlsx"])
-
-if archivo_subido is not None:
-    # 1. Cargar y Transformar Datos (Forzamos la re-evaluación directa sin caché)
-    archivo_subido.seek(0)
-    df = cargar_y_convertir_excel(archivo_subido)
-
-    # Se genera el dataframe procesado directamente
-    df_procesado = agregar_columnas_calculadas(df)
-
-    df_procesado['Hora_Bloque'] = df_procesado['Hora_Corta'].apply(
-        lambda h: f"{int(h):02d}:00" if pd.notnull(h) else "N/A"
-    )
-    # 2. Sidebar Filtros Operativos
+# 2. Sidebar Filtros Operativos
     st.sidebar.header("Filtros Operativos")
 
-    # Filtro 1: Día de la Semana
+    # NUEVO FILTRO: Mes(es) ordenados cronológicamente
+    meses_ordenados = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                       'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+    meses_presentes = [m for m in meses_ordenados if m in df_procesado['Mes_Texto'].unique()]
+    meses_seleccionados = st.sidebar.multiselect("Mes(es):", options=meses_presentes, default=meses_presentes)
+
+    # Filtro: Día de la Semana
     dias_ordenados = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
     dias_presentes = [d for d in dias_ordenados if d in df_procesado['Dia_Semana'].unique()]
     dia_seleccionado = st.sidebar.multiselect("Día de la Semana:", options=dias_presentes, default=dias_presentes)
 
-    # Filtro 2: Turno
+    # Filtro: Turno
     turnos_disponibles = sorted(df_procesado['Turno'].dropna().unique().tolist())
     turno_seleccionado = st.sidebar.multiselect("Turno Horario:", options=turnos_disponibles, default=turnos_disponibles)
 
-    # Filtro 3: Prestador
+    # Filtro: Prestador
     prestadores_disponibles = ["Todos"] + sorted(df_procesado['Prestador'].dropna().unique().tolist())
     prestador_seleccionado = st.sidebar.selectbox("Prestador:", prestadores_disponibles)
 
-    # Filtro 4: Servicio (Multiselect)
+    # Filtro: Servicio (Multiselect)
     servicios_disponibles = sorted(df_procesado['Servicio'].dropna().unique().tolist())
     servicios_seleccionados = st.sidebar.multiselect(
         "Servicio(s):",
@@ -131,12 +122,13 @@ if archivo_subido is not None:
         default=servicios_disponibles
     )
 
-    # Filtro 5: Canal / Origen
+    # Filtro: Canal / Origen
     origen_disponibles = ["Todos"] + sorted(df_procesado['Origen_Resumen'].dropna().unique().tolist())
     origen_seleccionado = st.sidebar.selectbox("Origen:", origen_disponibles)
 
-    # Aplicar Filtros Operativos
+    # Aplicar Filtros Operativos (Incluye Mes_Texto)
     df_filtrado = df_procesado[
+        (df_procesado['Mes_Texto'].isin(meses_seleccionados)) &  # <--- NUEVA CONDICIÓN
         (df_procesado['Dia_Semana'].isin(dia_seleccionado)) &
         (df_procesado['Turno'].isin(turno_seleccionado)) &
         (df_procesado['Servicio'].isin(servicios_seleccionados))
@@ -147,21 +139,6 @@ if archivo_subido is not None:
 
     if origen_seleccionado != "Todos":
         df_filtrado = df_filtrado[df_filtrado['Origen_Resumen'] == origen_seleccionado]
-
-    # Botón de Descarga en la Barra Lateral
-    st.sidebar.markdown("---")
-    st.sidebar.header("Exportar Reporte")
-
-    excel_bytes = generar_excel_resumen_ejecutivo(df_filtrado)
-
-    st.sidebar.download_button(
-        label="Descargar Resumen Ejecutivo (.xlsx)",
-        data=excel_bytes,
-        file_name="resumen_ejecutivo_reservas.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True
-    )
-
     # 3. Tarjetas KPIs (Alineación 100% exacta con reservas_procesadas)
     st.subheader("Indicadores Clave")
     col1, col2, col3, col4, col5 = st.columns(5)
