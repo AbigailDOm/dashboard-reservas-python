@@ -47,50 +47,39 @@ SUCCESS_GREEN = "#38C1B3"
 DANGER_RED = "#FF6B6B"
 
 # Inyección CSS personalizado para emular la interfaz clínica
-st.markdown(f"""
+# Inyección CSS adaptable tanto a Modo Claro como Modo Oscuro
+st.markdown("""
     <style>
-    /* Fondo global */
-    .stApp {{
-        background-color: {BG_LIGHT};
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        color: {TEXT_DARK};
-    }}
-
-    /* Barra lateral */
-    [data-testid="stSidebar"] {{
-        background-color: #FFFFFF;
-        border-right: 1px solid #E2E8F0;
-    }}
-
-    /* Títulos */
-    h1, h2, h3 {{
-        color: {TEXT_DARK} !important;
-        font-weight: 700 !important;
-    }}
-
-    /* Estilo para tarjetas KPI */
-    [data-testid="stMetric"] {{
-        background-color: {CARD_BG};
+    /* Estilo adaptable para tarjetas de métricas KPI */
+    [data-testid="stMetric"] {
+        background-color: var(--background-secondary-color, #FFFFFF);
         padding: 18px;
         border-radius: 16px;
-        box-shadow: 0px 4px 12px rgba(74, 82, 200, 0.05);
-        border: 1px solid #EAEFF8;
-    }}
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(128, 128, 128, 0.2);
+    }
 
-    /* Contenedores de pestañas y gráficos */
-    .stTabs [data-baseweb="tab-list"] {{
-        gap: 8px;
-    }}
-    .stTabs [data-baseweb="tab"] {{
-        background-color: #EAEFF8;
+    /* Asegura visibilidad del título y valores de los KPIs */
+    [data-testid="stMetricLabel"] p {
+        color: var(--text-color) !important;
+        font-weight: 600 !important;
+    }
+
+    [data-testid="stMetricValue"] div {
+        color: var(--text-color) !important;
+    }
+
+    /* Pestañas adaptables */
+    .stTabs [data-baseweb="tab"] {
         border-radius: 8px;
         padding: 8px 16px;
-        color: {TEXT_DARK};
-    }}
-    .stTabs [aria-selected="true"] {{
-        color: #1E293B !important;
-    }}
+    }
 
+    .stTabs [aria-selected="true"] {
+        background-color: rgba(76, 181, 229, 0.25) !important;
+        color: var(--text-color) !important;
+        font-weight: bold;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -200,7 +189,9 @@ if archivo_subido is not None:
         fig_hora.update_layout(
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)',
-            font_color=TEXT_DARK
+            legend=dict(title_font_color="gray", font_color="gray"),
+            xaxis=dict(title_font_color="gray", tickfont_color="gray"),
+            yaxis=dict(title_font_color="gray", tickfont_color="gray")
         )
         st.plotly_chart(fig_hora, use_container_width=True)
 
@@ -219,7 +210,9 @@ if archivo_subido is not None:
         fig_dia.update_layout(
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)',
-            font_color=TEXT_DARK
+            legend=dict(title_font_color="gray", font_color="gray"),
+            xaxis=dict(title_font_color="gray", tickfont_color="gray"),
+            yaxis=dict(title_font_color="gray", tickfont_color="gray")
         )
         st.plotly_chart(fig_dia, use_container_width=True)
 
