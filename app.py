@@ -126,28 +126,31 @@ if archivo_subido is not None:
     prestadores_disponibles = ["Todos"] + sorted(df_procesado['Prestador'].dropna().unique().tolist())
     prestador_seleccionado = st.sidebar.selectbox("Prestador:", prestadores_disponibles)
 
-    # Filtro 4: Servicio
-    servicios_disponibles = ["Todos"] + sorted(df_procesado['Servicio'].dropna().unique().tolist())
-    servicio_seleccionado = st.sidebar.selectbox("Servicio:", servicios_disponibles)
+    # Filtro 4: Servicio (Cambiado a multiselect)
+    servicios_disponibles = sorted(df_procesado['Servicio'].dropna().unique().tolist())
+    servicios_seleccionados = st.sidebar.multiselect(
+        "Servicio(s):",
+        options=servicios_disponibles,
+        default=servicios_disponibles  # Por defecto selecciona todos
+    )
 
     # Filtro 5 (NUEVO): Canal / Origen
     origen_disponibles = ["Todos"] + sorted(df_procesado['Origen_Resumen'].dropna().unique().tolist())
     origen_seleccionado = st.sidebar.selectbox("Origen:", origen_disponibles)
 
-    # Aplicación combinada de todos los filtros
+    # Aplicar Filtros Operativos
     df_filtrado = df_procesado[
         (df_procesado['Dia_Semana'].isin(dia_seleccionado)) &
-        (df_procesado['Turno'].isin(turno_seleccionado))
+        (df_procesado['Turno'].isin(turno_seleccionado)) &
+        (df_procesado['Servicio'].isin(servicios_seleccionados))  # <--- NUEVA CONDICIÓN
         ]
 
     if prestador_seleccionado != "Todos":
         df_filtrado = df_filtrado[df_filtrado['Prestador'] == prestador_seleccionado]
 
-    if servicio_seleccionado != "Todos":
-        df_filtrado = df_filtrado[df_filtrado['Servicio'] == servicio_seleccionado]
-
     if origen_seleccionado != "Todos":
         df_filtrado = df_filtrado[df_filtrado['Origen_Resumen'] == origen_seleccionado]
+
     # Botón de Descarga en la Barra Lateral
     st.sidebar.markdown("---")
     st.sidebar.header("Exportar Reporte")
