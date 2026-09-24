@@ -96,13 +96,12 @@ st.sidebar.header("Cargar Datos")
 archivo_subido = st.sidebar.file_uploader("Sube el archivo Excel (.xlsx)", type=["xlsx"])
 
 if archivo_subido is not None:
+    # Reiniciar la posición del buffer del archivo subido
+    archivo_subido.seek(0)
+
     # 1. Cargar y Transformar Datos
     df = cargar_y_convertir_excel(archivo_subido)
     df_procesado = agregar_columnas_calculadas(df)
-
-    df_procesado['Hora_Bloque'] = df_procesado['Hora_Corta'].apply(
-        lambda h: f"{int(h):02d}:00" if pd.notnull(h) else "N/A"
-    )
 
     # 2. Sidebar Filtros Operativos
     st.sidebar.header("Filtros Operativos")
@@ -159,25 +158,22 @@ if archivo_subido is not None:
         use_container_width=True
     )
 
-    # 3. Tarjetas KPIs
+    # 3. Tarjetas KPIs (Lógica directa de filtrado)
     st.subheader("Indicadores Clave")
     col1, col2, col3, col4, col5 = st.columns(5)
 
     total_reservas = len(df_filtrado)
     total_asistencias = (df_filtrado['Asistencia'] == 'Asiste').sum()
-    total_inasistencias = (df_filtrado['Inasistencia'] == 'No Asiste').sum()
+    total_inasistencias = (df_filtrado['Asistencia'] == 'No Asiste').sum()
+
     pct_asistencia = (total_asistencias / total_reservas * 100) if total_reservas > 0 else 0
     pct_inasistencia = (total_inasistencias / total_reservas * 100) if total_reservas > 0 else 0
 
-    col1.metric("Total Reservas", f"{total_reservas:,d} ")
-    col2.metric("Asistencias", f"{total_asistencias:,d} ")
-    col3.metric("Inasistencias", f"{total_inasistencias:,d} ")
+    col1.metric("Total Reservas", f"{total_reservas:,d}")
+    col2.metric("Asistencias", f"{total_asistencias:,d}")
+    col3.metric("Inasistencias", f"{total_inasistencias:,d}")
     col4.metric("% Cumplimiento", f"{pct_asistencia:.1f}%")
     col5.metric("% Inasistencia", f"{pct_inasistencia:.1f}%")
-
-    # CÓDIGO DE PRUEBA TEMPORAL
-    st.subheader("🧪 Conteo Real de Estados en tu Excel")
-    st.write(df_procesado['Estado'].value_counts())
 
     st.markdown("---")
 

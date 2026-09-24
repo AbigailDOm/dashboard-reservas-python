@@ -2,10 +2,12 @@ import pandas as pd
 
 
 def _preparar_columnas_numericas(df: pd.DataFrame) -> pd.DataFrame:
-    """Asegura que existan las columnas numéricas para sumar asistencias e inasistencias."""
+    """Lee directamente la columna 'Asistencia' que ya sabemos que está bien en reservas_procesadas."""
     df_copia = df.copy()
-    df_copia['Asiste_Num'] = df_copia['Asistencia'].apply(lambda x: 1 if x == 'Asiste' else 0)
-    df_copia['NoAsiste_Num'] = df_copia['Inasistencia'].apply(lambda x: 1 if x == 'No Asiste' else 0)
+    # 1 si dice exactamente 'Asiste', 0 para cualquier otra cosa
+    df_copia['Asiste_Num'] = (df_copia['Asistencia'] == 'Asiste').astype(int)
+    # 1 si dice exactamente 'No Asiste', 0 para cualquier otra cosa
+    df_copia['NoAsiste_Num'] = (df_copia['Asistencia'] == 'No Asiste').astype(int)
     return df_copia
 
 
@@ -114,7 +116,6 @@ def generar_reporte_dia_semana(df: pd.DataFrame) -> pd.DataFrame:
     reporte['% Asistencia'] = (reporte['Atendidos'] / reporte['Total_Citas'] * 100).round(2)
     reporte['% Inasistencia'] = (reporte['Inasistencias'] / reporte['Total_Citas'] * 100).round(2)
 
-    # Orden cronológico de días de la semana
     orden_dias = {'lunes': 1, 'martes': 2, 'miércoles': 3, 'jueves': 4, 'viernes': 5, 'sábado': 6, 'domingo': 7}
     reporte['Orden'] = reporte['Dia_Semana'].map(orden_dias)
     return reporte.sort_values(by='Orden').drop(columns=['Orden'])
