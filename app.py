@@ -46,30 +46,36 @@ CARD_BG = "#FFFFFF"
 SUCCESS_GREEN = "#38C1B3"
 DANGER_RED = "#FF6B6B"
 
-# Inyección CSS personalizado para emular la interfaz clínica
-# Inyección CSS adaptable tanto a Modo Claro como Modo Oscuro
+# Inyección CSS adaptable y compatible con Modo Oscuro y Modo Claro
 st.markdown("""
     <style>
-    /* Estilo adaptable para tarjetas de métricas KPI */
+    /* 1. Fondo e interfaz adaptable de tarjetas KPI */
     [data-testid="stMetric"] {
-        background-color: var(--background-secondary-color, #FFFFFF);
+        background-color: var(--background-secondary-color) !important;
         padding: 18px;
         border-radius: 16px;
-        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
-        border: 1px solid rgba(128, 128, 128, 0.2);
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(128, 128, 128, 0.2) !important;
     }
 
-    /* Asegura visibilidad del título y valores de los KPIs */
-    [data-testid="stMetricLabel"] p {
+    /* 2. Color dinámico de etiquetas (Títulos de los KPIs) */
+    [data-testid="stMetricLabel"] label, 
+    [data-testid="stMetricLabel"] p,
+    [data-testid="stMetricLabel"] span {
         color: var(--text-color) !important;
         font-weight: 600 !important;
+        font-size: 14px !important;
     }
 
-    [data-testid="stMetricValue"] div {
+    /* 3. Color dinámico de los valores numéricos */
+    [data-testid="stMetricValue"] div, 
+    [data-testid="stMetricValue"] p,
+    [data-testid="stMetricValue"] span {
         color: var(--text-color) !important;
+        font-weight: 700 !important;
     }
 
-    /* Pestañas adaptables */
+    /* 4. Estilo de las pestañas */
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px;
         padding: 8px 16px;
