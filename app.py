@@ -49,6 +49,12 @@ DANGER_RED = "#FF6B6B"
 # Inyección CSS adaptable y compatible con Modo Oscuro y Modo Claro
 st.markdown("""
     <style>
+    
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    [data-testid="stDecoration"] {display: none;} /* Elimina la línea superior de colores */
+    
     /* 1. Fondo e interfaz adaptable de tarjetas KPI */
     [data-testid="stMetric"] {
         background-color: var(--background-secondary-color) !important;
