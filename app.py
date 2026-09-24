@@ -15,6 +15,7 @@ from src.report import (
 )
 
 # Genera en memoria un archivo Excel con las 8 pestañas basándose en los datos filtrados
+@st.cache_data(show_spinner="Generando reporte ejecutivo...")
 def generar_excel_resumen_ejecutivo(df_filtrado: pd.DataFrame) -> bytes:
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine='openpyxl') as writer:

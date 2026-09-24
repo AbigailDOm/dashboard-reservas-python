@@ -1,7 +1,8 @@
 import pandas as pd
+import streamlit as st
 
-
-def cargar_y_convertir_excel(path_excel: str) -> pd.DataFrame:
+@st.cache_data(show_spinner=False)
+def cargar_y_convertir_excel(path_excel) -> pd.DataFrame:
     df = pd.read_excel(path_excel, sheet_name='Reservas')
     df['Fecha de realización'] = pd.to_datetime(
         df['Fecha de realización'], format='%d/%m/%Y %H:%M', errors='coerce'
