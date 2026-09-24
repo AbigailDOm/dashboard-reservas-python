@@ -198,7 +198,7 @@ if archivo_subido is not None:
         fig_hora = px.bar(
             rep_hora,
             x='Hora_Bloque',
-            y=['Atendidos', 'Inasistencias'],
+            y=['Asiste', 'No Asiste'],
             title="Asistencias e Inasistencias por Bloque Horario",
             barmode='stack',
             color_discrete_sequence=[SECONDARY_INDIGO, PRIMARY_CYAN],
