@@ -89,7 +89,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("Panel Analítico de Reservas y Citas")
+st.title("Panel Analítico de Reservas IMO")
 st.markdown("Visualiza y analiza la atención médica por Prestador, Servicio, Canal de Origen y Horarios.")
 
 # Sidebar
