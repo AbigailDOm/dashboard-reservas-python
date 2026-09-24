@@ -175,6 +175,10 @@ if archivo_subido is not None:
     col4.metric("% Cumplimiento", f"{pct_asistencia:.1f}%")
     col5.metric("% Inasistencia", f"{pct_inasistencia:.1f}%")
 
+    # CÓDIGO DE PRUEBA TEMPORAL
+    st.subheader("🧪 Conteo Real de Estados en tu Excel")
+    st.write(df_procesado['Estado'].value_counts())
+
     st.markdown("---")
 
     # 4. Gráficos
