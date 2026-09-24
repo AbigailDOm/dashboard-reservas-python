@@ -36,17 +36,20 @@ def agregar_columnas_calculadas(df: pd.DataFrame) -> pd.DataFrame:
     # 6. Turno (Matutino / Vespertino)
     df['Turno'] = df['Hora_Corta'].apply(lambda hora: 'Matutino' if hora < 12 else 'Vespertino')
 
-    # 7 y 8. Regla Estricta de Asistencia e Inasistencia
+    # 7 y 8. Regla Exacta de Asistencia e Inasistencia
+    # Definimos la lista exacta de estados que cuentan como ASISTENCIA
+    estados_asistencia = ['En Espera']
+
+    # Normalizamos el texto (elimina espacios y pone Mayúscula Inicial)
     estado_limpio = df['Estado'].astype(str).str.strip().str.title()
 
-    # 'Asiste' si el estado es 'En Espera'
+    # Si el estado está en la lista -> Asiste, de lo contrario -> No Asiste
     df['Asistencia'] = estado_limpio.apply(
-        lambda estado: 'Asiste' if estado == 'En Espera' else 'No Asiste'
+        lambda estado: 'Asiste' if estado in [e.title() for e in estados_asistencia] else 'No Asiste'
     )
 
-    # 'No Asiste' para cualquier estado diferente a 'En Espera'
     df['Inasistencia'] = estado_limpio.apply(
-        lambda estado: 'No Asiste' if estado != 'En Espera' else 'Asiste'
+        lambda estado: 'No Asiste' if estado in [e.title() for e in estados_asistencia] else 'Asiste'
     )
 
     # 9. Origen
