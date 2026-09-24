@@ -20,8 +20,7 @@ def generar_excel_resumen_ejecutivo(df_filtrado: pd.DataFrame) -> bytes:
     with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
         generar_reporte_prestadores(df_filtrado).to_excel(writer, sheet_name='Por Prestador', index=False)
         generar_reporte_servicios(df_filtrado).to_excel(writer, sheet_name='Por Servicio', index=False)
-        generar_reporte_prestador_servicio(df_filtrado).to_excel(writer, sheet_name='Prestador x Servicio',
-                                                                     index=False)
+        generar_reporte_prestador_servicio(df_filtrado).to_excel(writer, sheet_name='Prestador x Servicio', index=False)
         generar_reporte_origen_servicio(df_filtrado).to_excel(writer, sheet_name='Origen x Servicio', index=False)
         generar_reporte_por_hora_cerrada(df_filtrado).to_excel(writer, sheet_name='Por Hora Cerrada', index=False)
         generar_reporte_dia_semana(df_filtrado).to_excel(writer, sheet_name='Por Dia Semana', index=False)
@@ -46,37 +45,10 @@ CARD_BG = "#FFFFFF"
 SUCCESS_GREEN = "#38C1B3"
 DANGER_RED = "#FF6B6B"
 
-# Inyección CSS adaptable y compatible con Modo Oscuro y Modo Claro
+# Inyección CSS limpia para Tarjetas KPI y Pestañas
 st.markdown("""
     <style>
-    <style>
-    /* 1. Ocultar la barra flotante inferior con tu foto de perfil (App Status / Viewer Badge) */
-    [data-testid="stStatusWidget"],
-    .viewerBadge_container__1QSob,
-    .viewerBadge_link__1S137,
-    [class*="viewerBadge"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
-
-    /* 2. Ocultar los botones superiores de Fork, GitHub y opciones externas */
-    .stAppHeader [data-testid="stToolbar"] {
-        display: none !important;
-    }
-    
-    /* 3. Ocultar el pie de página por defecto */
-    footer {
-        display: none !important;
-    }
-
-    /* 4. MANTENER VISIBLE únicamente el botón de la barra lateral (flecha >>) */
-    [data-testid="stSidebarCollapseButton"],
-    [data-testid="stSidebarExpandButton"] {
-        display: flex !important;
-        visibility: visible !important;
-    }
-    
-    /* 5. Fondo e interfaz adaptable de tarjetas KPI */
+    /* 1. Fondo e interfaz adaptable de tarjetas KPI */
     [data-testid="stMetric"] {
         background-color: var(--background-secondary-color) !important;
         padding: 18px;
@@ -85,7 +57,7 @@ st.markdown("""
         border: 1px solid rgba(128, 128, 128, 0.2) !important;
     }
 
-    /* 6. Color dinámico de etiquetas (Títulos de los KPIs) */
+    /* 2. Color dinámico de etiquetas (Títulos de los KPIs) */
     [data-testid="stMetricLabel"] label, 
     [data-testid="stMetricLabel"] p,
     [data-testid="stMetricLabel"] span {
@@ -94,7 +66,7 @@ st.markdown("""
         font-size: 14px !important;
     }
 
-    /* 7. Color dinámico de los valores numéricos */
+    /* 3. Color dinámico de los valores numéricos */
     [data-testid="stMetricValue"] div, 
     [data-testid="stMetricValue"] p,
     [data-testid="stMetricValue"] span {
@@ -102,7 +74,7 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* 8. Estilo de las pestañas */
+    /* 4. Estilo de las pestañas */
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px;
         padding: 8px 16px;
@@ -142,21 +114,21 @@ if archivo_subido is not None:
 
     # Filtro 2: Turno
     turnos_disponibles = sorted(df_procesado['Turno'].dropna().unique().tolist())
-    turno_seleccionado = st.sidebar.multiselect("Turno Horario:", options=turnos_disponibles,
-                                                default=turnos_disponibles)
+    turno_seleccionado = st.sidebar.multiselect("Turno Horario:", options=turnos_disponibles, default=turnos_disponibles)
+
     # Filtro 3: Prestador
     prestadores_disponibles = ["Todos"] + sorted(df_procesado['Prestador'].dropna().unique().tolist())
     prestador_seleccionado = st.sidebar.selectbox("Prestador:", prestadores_disponibles)
 
-    # Filtro 4: Servicio (Cambiado a multiselect)
+    # Filtro 4: Servicio (Multiselect)
     servicios_disponibles = sorted(df_procesado['Servicio'].dropna().unique().tolist())
     servicios_seleccionados = st.sidebar.multiselect(
         "Servicio(s):",
         options=servicios_disponibles,
-        default=servicios_disponibles  # Por defecto selecciona todos
+        default=servicios_disponibles
     )
 
-    # Filtro 5 (NUEVO): Canal / Origen
+    # Filtro 5: Canal / Origen
     origen_disponibles = ["Todos"] + sorted(df_procesado['Origen_Resumen'].dropna().unique().tolist())
     origen_seleccionado = st.sidebar.selectbox("Origen:", origen_disponibles)
 
@@ -164,8 +136,8 @@ if archivo_subido is not None:
     df_filtrado = df_procesado[
         (df_procesado['Dia_Semana'].isin(dia_seleccionado)) &
         (df_procesado['Turno'].isin(turno_seleccionado)) &
-        (df_procesado['Servicio'].isin(servicios_seleccionados))  # <--- NUEVA CONDICIÓN
-        ]
+        (df_procesado['Servicio'].isin(servicios_seleccionados))
+    ]
 
     if prestador_seleccionado != "Todos":
         df_filtrado = df_filtrado[df_filtrado['Prestador'] == prestador_seleccionado]
@@ -183,7 +155,8 @@ if archivo_subido is not None:
         label="Descargar Resumen Ejecutivo (.xlsx)",
         data=excel_bytes,
         file_name="resumen_ejecutivo_reservas.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True
     )
 
     # 3. Tarjetas KPIs
@@ -196,9 +169,9 @@ if archivo_subido is not None:
     pct_asistencia = (total_asistencias / total_reservas * 100) if total_reservas > 0 else 0
     pct_inasistencia = (total_inasistencias / total_reservas * 100) if total_reservas > 0 else 0
 
-    col1.metric("Total Reservas", f"{total_reservas:,d}")
-    col2.metric("Asistencias", f"{total_asistencias:,d}")
-    col3.metric("Inasistencias", f"{total_inasistencias:,d}")
+    col1.metric("Total Reservas", f"{total_reservas:,d} ")
+    col2.metric("Asistencias", f"{total_asistencias:,d} ")
+    col3.metric("Inasistencias", f"{total_inasistencias:,d} ")
     col4.metric("% Cumplimiento", f"{pct_asistencia:.1f}%")
     col5.metric("% Inasistencia", f"{pct_inasistencia:.1f}%")
 
