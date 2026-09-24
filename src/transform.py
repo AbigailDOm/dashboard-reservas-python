@@ -37,24 +37,23 @@ def agregar_columnas_calculadas(df: pd.DataFrame) -> pd.DataFrame:
     df['Turno'] = df['Hora_Corta'].apply(lambda hora: 'Matutino' if hora < 12 else 'Vespertino')
 
     # 7 y 8. Regla Exacta de Asistencia e Inasistencia
-    # Definimos la lista exacta de estados que cuentan como ASISTENCIA
-    estados_asistencia = ['En Espera']
-
-    # Normalizamos el texto (elimina espacios y pone Mayúscula Inicial)
+    # Normalizamos el texto (elimina espacios extra y pone formato Title: 'En Espera')
     estado_limpio = df['Estado'].astype(str).str.strip().str.title()
 
-    # Si el estado está en la lista -> Asiste, de lo contrario -> No Asiste
+    # REGLA ESTRICTA:
+    # Si es 'En Espera' -> Asistencia = 'Asiste', Inasistencia = 'Asiste' (Es decir, NO es inasistencia)
+    # Si NO es 'En Espera' -> Asistencia = 'No Asiste', Inasistencia = 'No Asiste' (Es decir, SÍ es inasistencia)
+
     df['Asistencia'] = estado_limpio.apply(
-        lambda estado: 'Asiste' if estado in [e.title() for e in estados_asistencia] else 'No Asiste'
+        lambda estado: 'Asiste' if estado == 'En Espera' else 'No Asiste'
     )
 
     df['Inasistencia'] = estado_limpio.apply(
-        lambda estado: 'No Asiste' if estado in [e.title() for e in estados_asistencia] else 'Asiste'
+        lambda estado: 'No Asiste' if estado != 'En Espera' else 'Asiste'
     )
 
     # 9. Origen
     df['Origen_Resumen'] = df['Origen'].apply(
         lambda origen: 'Online' if str(origen).strip().lower() == 'online' else 'Manual'
     )
-
     return df
