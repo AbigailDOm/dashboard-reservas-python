@@ -49,11 +49,22 @@ DANGER_RED = "#FF6B6B"
 # Inyección CSS adaptable y compatible con Modo Oscuro y Modo Claro
 st.markdown("""
     <style>
+    <style>
+    /* Ocultar únicamente el botón de GitHub, Share y Star del header */
+    .stAppHeader [data-testid="stToolbar"] {
+        visibility: hidden;
+    }
     
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    [data-testid="stDecoration"] {display: none;} /* Elimina la línea superior de colores */
+    /* Ocultar el pie de página ("Made with Streamlit") */
+    footer {
+        visibility: hidden;
+    }
+
+    /* Asegurar que el botón de desplegar la Sidebar (flecha >) siga visible */
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarExpandButton"] {
+        visibility: visible !important;
+    }
     
     /* 1. Fondo e interfaz adaptable de tarjetas KPI */
     [data-testid="stMetric"] {
