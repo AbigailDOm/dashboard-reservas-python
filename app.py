@@ -208,19 +208,27 @@ if archivo_subido is not None:
     # ==========================================
     # SECCIÓN: INSIGHTS AUTOMÁTICOS INTELIGENTES
     # ==========================================
+
     st.subheader("Hallazgos Clave del Periodo Seleccionado")
 
     if not df_filtrado.empty:
-        # 1. Calcular el servicio con peor inasistencia
         rep_serv_insight = generar_reporte_servicios(df_filtrado)
-        if not rep_serv_insight.empty:
-            peor_servicio = rep_serv_insight.iloc[0]['Servicio']
-            pct_inasistencia_serv = rep_serv_insight.iloc[0]['% Inasistencia']
-        else:
-            peor_servicio = "N/A"
-            pct_inasistencia_serv = 0
 
-        # 2. Calcular el prestador con menor atención efectiva ('Atendidos' más bajo)
+        if not rep_serv_insight.empty:
+            # 1. Porcentaje más alto de inasistencia (Severidad del Comportamiento)
+            peor_pct_row = rep_serv_insight.sort_values(by='% Inasistencia', ascending=False).iloc[0]
+            servicio_pct_alto = peor_pct_row['Servicio']
+            pct_alto = peor_pct_row['% Inasistencia']
+
+            # 2. Mayor volumen absoluto de inasistencias (Impacto Operativo Real)
+            peor_vol_row = rep_serv_insight.sort_values(by='Inasistencias', ascending=False).iloc[0]
+            servicio_vol_alto = peor_vol_row['Servicio']
+            vol_alto = peor_vol_row['Inasistencias']
+        else:
+            servicio_pct_alto, pct_alto = "N/A", 0
+            servicio_vol_alto, vol_alto = "N/A", 0
+
+        # 3. Calcular el prestador con menor atención efectiva ('Atendidos' más bajo)
         rep_prest_insight = generar_reporte_prestadores(df_filtrado)
         if not rep_prest_insight.empty:
             prestador_bajo = rep_prest_insight.sort_values(by='Atendidos', ascending=True).iloc[0]
@@ -230,7 +238,7 @@ if archivo_subido is not None:
             nombre_prestador = "N/A"
             total_atendidos_prestador = 0
 
-        # 3. Calcular el día de la semana con mayor volumen de inasistencias
+        # 4. Calcular el día de la semana con mayor volumen de inasistencias
         rep_dia_insight = generar_reporte_dia_semana(df_filtrado)
         if not rep_dia_insight.empty:
             peor_dia = rep_dia_insight.sort_values(by='Inasistencias', ascending=False).iloc[0]
@@ -240,11 +248,13 @@ if archivo_subido is not None:
             nombre_dia = "N/A"
             total_inasistencias_dia = 0
 
-        # Mostrar los insights en una caja de información limpia y atractiva
+        # Mostrar los insights estructurados con tus directrices analíticas
         st.info(
-            f"**Servicio crítico:** El servicio con mayor porcentaje de inasistencia es **{peor_servicio}** con un **{pct_inasistencia_serv}%**.\n\n"
-            f"**Prestador con menor flujo efectivo:** **{nombre_prestador}** registra el menor volumen de atenciones efectivas (*En Espera*), con **{total_atendidos_prestador:,d}** citas.\n\n"
-            f"**Día con mayor ausentismo:** El día **{nombre_dia}** acumula la mayor cantidad de inasistencias, sumando **{total_inasistencias_dia:,d}** casos."
+            f"📌 **Resumen Ejecutivo Dinámico:**\n\n"
+            f"**Severidad del Comportamiento (% Crítico):** El servicio **{servicio_pct_alto}** se encuentra en estado crítico con un **{pct_alto}%** de inasistencia, lo que indica que el proceso de confirmación, recordatorio o el interés del paciente está fallando masivamente en este rubro.\n"
+            f"**Impacto Operativo Real (Volumen de Faltas):** El servicio **{servicio_vol_alto}** genera la mayor cantidad de horas muertas acumuladas, registrando un total de **{vol_alto:,d}** citas perdidas.\n"
+            f"**Prestador con menor flujo efectivo:** **{nombre_prestador}** registra el menor volumen de atenciones efectivas (*En Espera*), con **{total_atendidos_prestador:,d}** citas.\n"
+            f"**Día con mayor ausentismo:** El día **{nombre_dia}** acumula la mayor cantidad de inasistencias a nivel global, sumando **{total_inasistencias_dia:,d}** casos."
         )
     else:
         st.warning("⚠️ No hay datos disponibles para los filtros seleccionados.")
