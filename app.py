@@ -1,4 +1,6 @@
 import io
+import psutil
+import os
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -92,20 +94,34 @@ st.markdown("""
 st.title("Panel Analítico de Reservas IMO")
 st.markdown("Visualiza y analiza la atención médica por Prestador, Servicio, Canal de Origen y Horarios.")
 
-# Sidebar - Carga de Datos
+# Sidebar - Carga de Datos con validación de peso y límites
 st.sidebar.header("Cargar Datos")
 archivo_subido = st.sidebar.file_uploader("Sube el archivo Excel (.xlsx)", type=["xlsx"])
 
 if archivo_subido is not None:
-    # 1. Cargar y Transformar Datos
-    archivo_subido.seek(0)
-    df = cargar_y_convertir_excel(archivo_subido)
-    df_procesado = agregar_columnas_calculadas(df)
+    # 1. Validar el tamaño del archivo en MB antes de procesar
+    # 25 MB es un límite muy seguro para evitar superar los recursos de la nube
+    tamanio_bytes = archivo_subido.size
+    tamanio_mb = tamanio_bytes / (1024 * 1024)
 
-    df_procesado['Hora_Bloque'] = df_procesado['Hora_Corta'].apply(
-        lambda h: f"{int(h):02d}:00" if pd.notnull(h) else "N/A"
-    )
+    # Imprimir métricas detalladas en la consola del servidor (para ti)
+    proceso = psutil.Process(os.getpid())
+    memoria_actual_mb = proceso.memory_info().rss / (1024 * 1024)
+    print(
+        f"[LOG TÉCNICO] Archivo subido: {tamanio_mb:.2f} MB | Memoria RAM actual del servidor: {memoria_actual_mb:.2f} MB")
 
+    LIMITE_MAXIMO_MB = 30.0  # Límite preventivo de seguridad
+
+    if tamanio_mb > LIMITE_MAXIMO_MB:
+        st.error(
+            f"🚫 **Archivo demasiado pesado:** El archivo pesa **{tamanio_mb:.1f} MB**, superando el límite de seguridad de **{LIMITE_MAXIMO_MB} MB**. "
+            "Por favor, reduce el rango de fechas o divide el archivo para evitar saturar los recursos del servidor."
+        )
+    else:
+        # Carga normal si pasa la validación de peso
+        archivo_subido.seek(0)
+        df = cargar_y_convertir_excel(archivo_subido)
+        df_procesado = agregar_columnas_calculadas(df)
     # 2. Sidebar Filtros Operativos
     st.sidebar.header("Filtros Operativos")
 
