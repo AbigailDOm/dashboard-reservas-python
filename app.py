@@ -233,6 +233,8 @@ if archivo_subido is not None:
     else:
         st.warning("⚠️ No hay datos disponibles para los filtros seleccionados.")
 
+    st.markdown("---")
+
     # 4. Gráficos
     st.subheader("Distribución Operativa")
     col_hora, col_dia = st.columns(2)
