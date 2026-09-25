@@ -45,8 +45,8 @@ authenticator = stauth.Authenticate(
     cookie_expiry_days=1
 )
 
-# Renderizamos el widget de login en la barra lateral
-name, authentication_status, username = authenticator.login('Login', 'sidebar')
+# Renderizamos el widget de login utilizando la nueva sintaxis compatible
+name, authentication_status, username = authenticator.login(location='sidebar')
 
 if authentication_status == False:
     st.sidebar.error('Correo o contraseña incorrectos')
