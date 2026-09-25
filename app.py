@@ -24,14 +24,18 @@ st.set_page_config(
 )
 
 # ==========================================
-# 🔐 CONFIGURACIÓN DEL SISTEMA DE LOGIN (DESDE SECRETS)
+# 🔐 CONFIGURACIÓN DEL SISTEMA DE LOGIN
 # ==========================================
 try:
-    # Cargamos las credenciales de forma segura desde la configuración oculta de Streamlit
-    credentials = dict(st.secrets["credentials"])
+    # Convertimos explícitamente el secreto de Streamlit a un diccionario mutable estándar
+    credentials = {
+        "usernames": {
+            username: dict(user_data)
+            for username, user_data in st.secrets["credentials"]["usernames"].items()
+        }
+    }
 except Exception as e:
-    st.error(
-        "⚠️ Error crítico: No se encontró el archivo de credenciales (secrets.toml). Configura los accesos para continuar.")
+    st.error(f"⚠️ Error crítico al cargar credenciales: {e}")
     st.stop()
 
 authenticator = stauth.Authenticate(
