@@ -192,8 +192,7 @@ if archivo_subido is not None:
     # ==========================================
     # SECCIÓN: INSIGHTS AUTOMÁTICOS INTELIGENTES
     # ==========================================
-    st.markdown("---")
-    st.subheader("💡 Hallazgos Clave del Periodo Seleccionado")
+    st.subheader("Hallazgos Clave del Periodo Seleccionado")
 
     if not df_filtrado.empty:
         # 1. Calcular el servicio con peor inasistencia
@@ -227,10 +226,9 @@ if archivo_subido is not None:
 
         # Mostrar los insights en una caja de información limpia y atractiva
         st.info(
-            f"📌 **Resumen Ejecutivo Dinámico:**\n\n"
-            f"*Servicio crítico:** El servicio con mayor porcentaje de inasistencia es **{peor_servicio}** con un **{pct_inasistencia_serv}%**.\n"
-            f"*Prestador con menor flujo efectivo:** **{nombre_prestador}** registra el menor volumen de atenciones efectivas (*En Espera*), con **{total_atendidos_prestador:,d}** citas.\n"
-            f"*Día con mayor ausentismo:** El día **{nombre_dia}** acumula la mayor cantidad de inasistencias, sumando **{total_inasistencias_dia:,d}** casos."
+            f"**Servicio crítico:** El servicio con mayor porcentaje de inasistencia es **{peor_servicio}** con un **{pct_inasistencia_serv}%**.\n\n"
+            f"**Prestador con menor flujo efectivo:** **{nombre_prestador}** registra el menor volumen de atenciones efectivas (*En Espera*), con **{total_atendidos_prestador:,d}** citas.\n\n"
+            f"**Día con mayor ausentismo:** El día **{nombre_dia}** acumula la mayor cantidad de inasistencias, sumando **{total_inasistencias_dia:,d}** casos."
         )
     else:
         st.warning("⚠️ No hay datos disponibles para los filtros seleccionados.")
