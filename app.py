@@ -189,6 +189,52 @@ if archivo_subido is not None:
 
     st.markdown("---")
 
+    # ==========================================
+    # SECCIÓN: INSIGHTS AUTOMÁTICOS INTELIGENTES
+    # ==========================================
+    st.markdown("---")
+    st.subheader("💡 Hallazgos Clave del Periodo Seleccionado")
+
+    if not df_filtrado.empty:
+        # 1. Calcular el servicio con peor inasistencia
+        rep_serv_insight = generar_reporte_servicios(df_filtrado)
+        if not rep_serv_insight.empty:
+            peor_servicio = rep_serv_insight.iloc[0]['Servicio']
+            pct_inasistencia_serv = rep_serv_insight.iloc[0]['% Inasistencia']
+        else:
+            peor_servicio = "N/A"
+            pct_inasistencia_serv = 0
+
+        # 2. Calcular el prestador con menor atención efectiva ('Atendidos' más bajo)
+        rep_prest_insight = generar_reporte_prestadores(df_filtrado)
+        if not rep_prest_insight.empty:
+            prestador_bajo = rep_prest_insight.sort_values(by='Atendidos', ascending=True).iloc[0]
+            nombre_prestador = prestador_bajo['Prestador']
+            total_atendidos_prestador = prestador_bajo['Atendidos']
+        else:
+            nombre_prestador = "N/A"
+            total_atendidos_prestador = 0
+
+        # 3. Calcular el día de la semana con mayor volumen de inasistencias
+        rep_dia_insight = generar_reporte_dia_semana(df_filtrado)
+        if not rep_dia_insight.empty:
+            peor_dia = rep_dia_insight.sort_values(by='Inasistencias', ascending=False).iloc[0]
+            nombre_dia = peor_dia['Dia_Semana']
+            total_inasistencias_dia = peor_dia['Inasistencias']
+        else:
+            nombre_dia = "N/A"
+            total_inasistencias_dia = 0
+
+        # Mostrar los insights en una caja de información limpia y atractiva
+        st.info(
+            f"📌 **Resumen Ejecutivo Dinámico:**\n\n"
+            f"*Servicio crítico:** El servicio con mayor porcentaje de inasistencia es **{peor_servicio}** con un **{pct_inasistencia_serv}%**.\n"
+            f"*Prestador con menor flujo efectivo:** **{nombre_prestador}** registra el menor volumen de atenciones efectivas (*En Espera*), con **{total_atendidos_prestador:,d}** citas.\n"
+            f"*Día con mayor ausentismo:** El día **{nombre_dia}** acumula la mayor cantidad de inasistencias, sumando **{total_inasistencias_dia:,d}** casos."
+        )
+    else:
+        st.warning("⚠️ No hay datos disponibles para los filtros seleccionados.")
+
     # 4. Gráficos
     st.subheader("Distribución Operativa")
     col_hora, col_dia = st.columns(2)
