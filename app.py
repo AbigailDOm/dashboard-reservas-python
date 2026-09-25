@@ -208,7 +208,8 @@ if archivo_subido is not None:
             data=excel_bytes,
             file_name="resumen_ejecutivo_reservas.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
+            use_container_width=True,
+            key="btn_descarga_resumen_sidebar"  # <--- Agregamos esta llave única
         )
 
         # Botón de Descarga en la Barra Lateral
