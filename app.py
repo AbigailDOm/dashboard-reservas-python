@@ -103,6 +103,7 @@ if archivo_subido is not None:
     tamanio_bytes = archivo_subido.size
     tamanio_mb = tamanio_bytes / (1024 * 1024)
 
+    # Imprimir métricas detalladas en la consola del servidor (para ti)
     proceso = psutil.Process(os.getpid())
     memoria_actual_mb = proceso.memory_info().rss / (1024 * 1024)
     print(
@@ -121,16 +122,14 @@ if archivo_subido is not None:
         df = cargar_y_convertir_excel(archivo_subido)
         df_procesado = agregar_columnas_calculadas(df)
 
-        # ==========================================
-        # 2. SIDEBAR FILTROS OPERATIVOS (Rango de Fechas)
-        # ==========================================
+        # 2. Sidebar Filtros Operativos
         st.sidebar.header("Filtros Operativos")
 
+        # Rango de fechas por defecto abarcando todo el archivo
         min_date = df_procesado['Fecha de realización'].min().date()
         max_date = df_procesado['Fecha de realización'].max().date()
 
         st.sidebar.markdown("📅 **Filtrar por Rango de Fechas**")
-
         rango_fechas = st.sidebar.date_input(
             "Selecciona el periodo:",
             value=(min_date, max_date),
@@ -145,8 +144,7 @@ if archivo_subido is not None:
 
         # Filtro 3: Turno
         turnos_disponibles = sorted(df_procesado['Turno'].dropna().unique().tolist())
-        turno_seleccionado = st.sidebar.multiselect("Turno Horario:", options=turnos_disponibles,
-                                                    default=turnos_disponibles)
+        turno_seleccionado = st.sidebar.multiselect("Turno Horario:", options=turnos_disponibles, default=turnos_disponibles)
 
         # Filtro 4: Prestador
         prestadores_disponibles = ["Todos"] + sorted(df_procesado['Prestador'].dropna().unique().tolist())
@@ -164,7 +162,7 @@ if archivo_subido is not None:
         origen_disponibles = ["Todos"] + sorted(df_procesado['Origen_Resumen'].dropna().unique().tolist())
         origen_seleccionado = st.sidebar.selectbox("Origen:", origen_disponibles)
 
-        # --- APLICAR FILTROS OPERATIVOS (BLINDADO) ---
+        # Aplicar Filtros Operativos (Blindaje para rango de fechas)
         if isinstance(rango_fechas, tuple):
             if len(rango_fechas) == 2:
                 fecha_inicio, fecha_fin = rango_fechas
@@ -175,7 +173,6 @@ if archivo_subido is not None:
         else:
             fecha_inicio = fecha_fin = rango_fechas if rango_fechas else min_date
 
-        # Si por alguna razón el usuario deja una fecha vacía, asignamos los límites
         if not fecha_inicio:
             fecha_inicio = min_date
         if not fecha_fin:
@@ -187,17 +184,15 @@ if archivo_subido is not None:
             (df_procesado['Dia_Semana'].isin(dia_seleccionado)) &
             (df_procesado['Turno'].isin(turno_seleccionado)) &
             (df_procesado['Servicio'].isin(servicios_seleccionados))
-            ]
+        ]
 
         if prestador_seleccionado != "Todos":
-            df_filtrado = df_filtrado[
-                df_filtrado['Prestadores'] == prestador_seleccionado] if 'Prestadores' in df_filtrado.columns else \
-            df_filtrado[df_filtrado['Prestador'] == prestador_seleccionado]
+            df_filtrado = df_filtrado[df_filtrado['Prestador'] == prestador_seleccionado]
 
         if origen_seleccionado != "Todos":
             df_filtrado = df_filtrado[df_filtrado['Origen_Resumen'] == origen_seleccionado]
 
-        # Botón de Descarga en la Barra Lateral
+        # Botón de Descarga en la Barra Lateral con key única
         st.sidebar.markdown("---")
         st.sidebar.header("Exportar Reporte")
 
@@ -209,241 +204,208 @@ if archivo_subido is not None:
             file_name="resumen_ejecutivo_reservas.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
-            key="btn_descarga_resumen_sidebar"  # <--- Agregamos esta llave única
+            key="btn_descarga_resumen_sidebar_principal"
         )
 
-        # Botón de Descarga en la Barra Lateral
-        st.sidebar.markdown("---")
-        st.sidebar.header("Exportar Reporte")
+        # 3. Tarjetas KPIs (Alineación 100% exacta con reservas_procesadas)
+        st.subheader("Indicadores Clave")
+        col1, col2, col3, col4, col5 = st.columns(5)
 
-        excel_bytes = generar_excel_resumen_ejecutivo(df_filtrado)
+        total_reservas = len(df_filtrado)
 
-        st.sidebar.download_button(
-            label="Descargar Resumen Ejecutivo (.xlsx)",
-            data=excel_bytes,
-            file_name="resumen_ejecutivo_reservas.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
-        )
+        # La fuente de verdad única es la columna 'Asistencia'
+        total_asistencias = (df_filtrado['Asistencia'] == 'Asiste').sum()
+        total_inasistencias = (df_filtrado['Asistencia'] == 'No Asiste').sum()
 
-    # Botón de Descarga en la Barra Lateral
-    st.sidebar.markdown("---")
-    st.sidebar.header("Exportar Reporte")
+        pct_asistencia = (total_asistencias / total_reservas * 100) if total_reservas > 0 else 0
+        pct_inasistencia = (total_inasistencias / total_reservas * 100) if total_reservas > 0 else 0
 
-    excel_bytes = generar_excel_resumen_ejecutivo(df_filtrado)
+        col1.metric("Total Reservas", f"{total_reservas:,d}")
+        col2.metric("Asistencias", f"{total_asistencias:,d}")
+        col3.metric("Inasistencias", f"{total_inasistencias:,d}")
+        col4.metric("% Cumplimiento", f"{pct_asistencia:.1f}%")
+        col5.metric("% Inasistencia", f"{pct_inasistencia:.1f}%")
 
-    st.sidebar.download_button(
-        label="Descargar Resumen Ejecutivo (.xlsx)",
-        data=excel_bytes,
-        file_name="resumen_ejecutivo_reservas.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True
-    )
+        st.markdown("---")
 
-    # 3. Tarjetas KPIs (Alineación 100% exacta con reservas_procesadas)
-    st.subheader("Indicadores Clave")
-    col1, col2, col3, col4, col5 = st.columns(5)
+        # ==========================================
+        # SECCIÓN: INSIGHTS AUTOMÁTICOS INTELIGENTES
+        # ==========================================
 
-    total_reservas = len(df_filtrado)
+        st.subheader("Hallazgos Clave del Periodo Seleccionado")
 
-    # La fuente de verdad única es la columna 'Asistencia'
-    total_asistencias = (df_filtrado['Asistencia'] == 'Asiste').sum()
-    total_inasistencias = (df_filtrado['Asistencia'] == 'No Asiste').sum()
+        if not df_filtrado.empty:
+            rep_serv_insight = generar_reporte_servicios(df_filtrado)
 
-    pct_asistencia = (total_asistencias / total_reservas * 100) if total_reservas > 0 else 0
-    pct_inasistencia = (total_inasistencias / total_reservas * 100) if total_reservas > 0 else 0
+            if not rep_serv_insight.empty:
+                # 1. Porcentaje más alto de inasistencia (Severidad del Comportamiento)
+                peor_pct_row = rep_serv_insight.sort_values(by='% Inasistencia', ascending=False).iloc[0]
+                servicio_pct_alto = peor_pct_row['Servicio']
+                pct_alto = peor_pct_row['% Inasistencia']
 
-    col1.metric("Total Reservas", f"{total_reservas:,d}")
-    col2.metric("Asistencias", f"{total_asistencias:,d}")
-    col3.metric("Inasistencias", f"{total_inasistencias:,d}")
-    col4.metric("% Cumplimiento", f"{pct_asistencia:.1f}%")
-    col5.metric("% Inasistencia", f"{pct_inasistencia:.1f}%")
+                # 2. Mayor volumen absoluto de inasistencias (Impacto Operativo Real)
+                peor_vol_row = rep_serv_insight.sort_values(by='Inasistencias', ascending=False).iloc[0]
+                servicio_vol_alto = peor_vol_row['Servicio']
+                vol_alto = peor_vol_row['Inasistencias']
+            else:
+                servicio_pct_alto, pct_alto = "N/A", 0
+                servicio_vol_alto, vol_alto = "N/A", 0
 
-    st.markdown("---")
+            # 3. Calcular el prestador con menor atención efectiva
+            mostrar_prestador_insight = False
+            nombre_prestador, total_atendidos_prestador = "N/A", 0
 
-    # ==========================================
-    # SECCIÓN: INSIGHTS AUTOMÁTICOS INTELIGENTES
-    # ==========================================
+            if prestador_seleccionado == "Todos":
+                rep_prest_insight = generar_reporte_prestadores(df_filtrado)
+                if len(rep_prest_insight) > 1:
+                    prestador_bajo = rep_prest_insight.sort_values(by='Atendidos', ascending=True).iloc[0]
+                    nombre_prestador = prestador_bajo['Prestador']
+                    total_atendidos_prestador = prestador_bajo['Atendidos']
+                    mostrar_prestador_insight = True
 
-    st.subheader("Hallazgos Clave del Periodo Seleccionado")
+            # 4. Calcular el día de la semana con mayor volumen de inasistencias
+            rep_dia_insight = generar_reporte_dia_semana(df_filtrado)
+            if not rep_dia_insight.empty:
+                peor_dia = rep_dia_insight.sort_values(by='Inasistencias', ascending=False).iloc[0]
+                nombre_dia = peor_dia['Dia_Semana']
+                total_inasistencias_dia = peor_dia['Inasistencias']
+            else:
+                nombre_dia = "N/A"
+                total_inasistencias_dia = 0
 
-    if not df_filtrado.empty:
-        rep_serv_insight = generar_reporte_servicios(df_filtrado)
+            # --- REDACCIÓN DINÁMICA DE LOS TEXTOS ---
 
-        if not rep_serv_insight.empty:
-            # 1. Porcentaje más alto de inasistencia (Severidad del Comportamiento)
-            peor_pct_row = rep_serv_insight.sort_values(by='% Inasistencia', ascending=False).iloc[0]
-            servicio_pct_alto = peor_pct_row['Servicio']
-            pct_alto = peor_pct_row['% Inasistencia']
+            if pct_alto > 0:
+                texto_severidad = (
+                    f"**Severidad del Comportamiento (% Crítico):** El servicio **{servicio_pct_alto}** "
+                    f"presenta el porcentaje más alto de inasistencia con un **{pct_alto}%**, lo que indica que el proceso "
+                    f"de confirmación, recordatorio o el interés del paciente requiere atención en este rubro."
+                )
+            else:
+                texto_severidad = (
+                    f"**Desempeño Destacado (% de Asistencia):** El servicio **{servicio_pct_alto}** "
+                    f"registra un **0.0% de inasistencia**, alcanzando un cumplimiento perfecto en el periodo."
+                )
 
-            # 2. Mayor volumen absoluto de inasistencias (Impacto Operativo Real)
-            peor_vol_row = rep_serv_insight.sort_values(by='Inasistencias', ascending=False).iloc[0]
-            servicio_vol_alto = peor_vol_row['Servicio']
-            vol_alto = peor_vol_row['Inasistencias']
-        else:
-            servicio_pct_alto, pct_alto = "N/A", 0
-            servicio_vol_alto, vol_alto = "N/A", 0
+            if vol_alto > 0:
+                texto_volumen = (
+                    f"**Impacto Operativo Real (Volumen de Faltas):** El servicio **{servicio_vol_alto}** "
+                    f"acumula la mayor cantidad de horas muertas, registrando un total de **{vol_alto:,d}** citas perdidas."
+                )
+            else:
+                texto_volumen = (
+                    f"**Impacto Operativo Real (Volumen de Faltas):** No se registran citas perdidas "
+                    f"por ausentismo en los servicios analizados, operando con saldo blanco."
+                )
 
-        # 3. Calcular el prestador con menor atención efectiva
-        # (Solo lo calculamos y mostramos si hay múltiples prestadores y NO se ha filtrado uno solo)
-        mostrar_prestador_insight = False
-        nombre_prestador, total_atendidos_prestador = "N/A", 0
+            if total_inasistencias_dia > 0:
+                texto_dia = (
+                    f"**Día con mayor ausentismo:** El día **{nombre_dia}** acumula la mayor cantidad de inasistencias "
+                    f"a nivel global, sumando **{total_inasistencias_dia:,d}** casos."
+                )
+            else:
+                texto_dia = (
+                    f"**Análisis por Día:** No se detectan inasistencias significativas distribuidas en los días de la semana."
+                )
 
-        if prestador_seleccionado == "Todos":
-            rep_prest_insight = generar_reporte_prestadores(df_filtrado)
-            # Verificamos si realmente hay más de un prestador en los datos filtrados actuales
-            if len(rep_prest_insight) > 1:
-                prestador_bajo = rep_prest_insight.sort_values(by='Atendidos', ascending=True).iloc[0]
-                nombre_prestador = prestador_bajo['Prestador']
-                total_atendidos_prestador = prestador_bajo['Atendidos']
-                mostrar_prestador_insight = True
+            # Construimos la lista de viñetas dinámicamente
+            viñetas = [
+                f"* {texto_severidad}",
+                f"* {texto_volumen}"
+            ]
 
-        # 4. Calcular el día de la semana con mayor volumen de inasistencias
-        rep_dia_insight = generar_reporte_dia_semana(df_filtrado)
-        if not rep_dia_insight.empty:
-            peor_dia = rep_dia_insight.sort_values(by='Inasistencias', ascending=False).iloc[0]
-            nombre_dia = peor_dia['Dia_Semana']
-            total_inasistencias_dia = peor_dia['Inasistencias']
-        else:
-            nombre_dia = "N/A"
-            total_inasistencias_dia = 0
+            if mostrar_prestador_insight:
+                viñetas.append(
+                    f"**Prestador con menor flujo efectivo:** **{nombre_prestador}** registra el menor volumen "
+                    f"de atenciones efectivas (*En Espera*), con **{total_atendidos_prestador:,d}** citas en comparación con el resto del equipo."
+                )
 
-        # --- REDACCIÓN DINÁMICA DE LOS TEXTOS ---
+            viñetas.append(f"* {texto_dia}")
 
-        if pct_alto > 0:
-            texto_severidad = (
-                f"**Severidad del Comportamiento (% Crítico):** El servicio **{servicio_pct_alto}** "
-                f"presenta el porcentaje más alto de inasistencia con un **{pct_alto}%**, lo que indica que el proceso "
-                f"de confirmación, recordatorio o el interés del paciente requiere atención en este rubro."
+            st.info(
+                f"**Resumen Ejecutivo Dinámico:**\n\n" + "\n".join(viñetas)
             )
         else:
-            texto_severidad = (
-                f"**Desempeño Destacado (% de Asistencia):** El servicio **{servicio_pct_alto}** "
-                f"registra un **0.0% de inasistencia**, alcanzando un cumplimiento perfecto en el periodo."
+            st.warning("⚠️ No hay datos disponibles para los filtros seleccionados.")
+
+        st.markdown("---")
+
+        # 4. Gráficos
+        st.subheader("Distribución Operativa")
+        col_hora, col_dia = st.columns(2)
+
+        with col_hora:
+            rep_hora = generar_reporte_por_hora_cerrada(df_filtrado).rename(
+                columns={'Atendidos': 'Asiste', 'Inasistencias': 'No Asiste'}
             )
 
-        if vol_alto > 0:
-            texto_volumen = (
-                f"**Impacto Operativo Real (Volumen de Faltas):** El servicio **{servicio_vol_alto}** "
-                f"acumula la mayor cantidad de horas muertas, registrando un total de **{vol_alto:,d}** citas perdidas."
+            fig_hora = px.bar(
+                rep_hora,
+                x='Hora_Bloque',
+                y=['Asiste', 'No Asiste'],
+                title="Asistencias e Inasistencias por Bloque Horario",
+                barmode='stack',
+                color_discrete_map={'Asiste': SECONDARY_INDIGO, 'No Asiste': PRIMARY_CYAN},
+                labels={'value': 'Cantidad de Citas', 'Hora_Bloque': 'Hora', 'variable': 'Estado'}
             )
-        else:
-            texto_volumen = (
-                f"**Impacto Operativo Real (Volumen de Faltas):** No se registran citas perdidas "
-                f"por ausentismo en los servicios analizados, operando con saldo blanco."
+            fig_hora.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                legend=dict(title_font_color="gray", font_color="gray"),
+                xaxis=dict(title_font_color="gray", tickfont_color="gray"),
+                yaxis=dict(title_font_color="gray", tickfont_color="gray")
             )
+            st.plotly_chart(fig_hora, use_container_width=True)
 
-        if total_inasistencias_dia > 0:
-            texto_dia = (
-                f"**Día con mayor ausentismo:** El día **{nombre_dia}** acumula la mayor cantidad de inasistencias "
-                f"a nivel global, sumando **{total_inasistencias_dia:,d}** casos."
+        with col_dia:
+            rep_dia = df_filtrado.groupby(['Dia_Semana', 'Asistencia']).size().reset_index(name='Citas')
+            fig_dia = px.bar(
+                rep_dia,
+                x='Dia_Semana',
+                y='Citas',
+                color='Asistencia',
+                title="Demanda por Día de la Semana",
+                barmode='group',
+                color_discrete_map={'Asiste': SECONDARY_INDIGO, 'No Asiste': PRIMARY_CYAN},
+                category_orders={'Dia_Semana': dias_ordenados},
+                labels={'Citas': 'Cantidad de Citas', 'Dia_Semana': 'Día', 'Asistencia': 'Estado'}
             )
-        else:
-            texto_dia = (
-                f"**Análisis por Día:** No se detectan inasistencias significativas distribuidas en los días de la semana."
+            fig_dia.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                legend=dict(title_font_color="gray", font_color="gray"),
+                xaxis=dict(title_font_color="gray", tickfont_color="gray"),
+                yaxis=dict(title_font_color="gray", tickfont_color="gray")
             )
+            st.plotly_chart(fig_dia, use_container_width=True)
 
-        # Construimos la lista de viñetas dinámicamente
-        viñetas = [
-            f"* {texto_severidad}",
-            f"* {texto_volumen}"
-        ]
+        st.markdown("---")
 
-        # Agregamos la línea del prestador SOLAMENTE si hay una comparativa real multicaso
-        if mostrar_prestador_insight:
-            viñetas.append(
-                f"**Prestador con menor flujo efectivo:** **{nombre_prestador}** registra el menor volumen "
-                f"de atenciones efectivas (*En Espera*), con **{total_atendidos_prestador:,d}** citas en comparación con el resto del equipo."
-            )
+        # 5. Tablas Desglosadas
+        st.subheader("Tablas Detalladas")
 
-        viñetas.append(f"* {texto_dia}")
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
+            "Origen x Servicio",
+            "Prestador x Servicio",
+            "Por Hora Cerrada",
+            "Por Servicio",
+            "Por Prestador"
+        ])
 
-        # Mostrar los insights limpios
-        st.info(
-            f"**Resumen Ejecutivo Dinámico:**\n\n" + "\n".join(viñetas)
-        )
-    else:
-        st.warning("⚠️ No hay datos disponibles para los filtros seleccionados.")
+        with tab1:
+            st.dataframe(generar_reporte_origen_servicio(df_filtrado), use_container_width=True)
 
-    st.markdown("---")
+        with tab2:
+            st.dataframe(generar_reporte_prestador_servicio(df_filtrado), use_container_width=True)
 
-    # 4. Gráficos
-    st.subheader("Distribución Operativa")
-    col_hora, col_dia = st.columns(2)
+        with tab3:
+            st.dataframe(generar_reporte_por_hora_cerrada(df_filtrado), use_container_width=True)
 
-    with col_hora:
-        # Generamos el reporte y renombramos las columnas para estandarizar las etiquetas a 'Asiste' y 'No Asiste'
-        rep_hora = generar_reporte_por_hora_cerrada(df_filtrado).rename(
-            columns={'Atendidos': 'Asiste', 'Inasistencias': 'No Asiste'}
-        )
+        with tab4:
+            st.dataframe(generar_reporte_servicios(df_filtrado), use_container_width=True)
 
-        fig_hora = px.bar(
-            rep_hora,
-            x='Hora_Bloque',
-            y=['Asiste', 'No Asiste'],
-            title="Asistencias e Inasistencias por Bloque Horario",
-            barmode='stack',
-            color_discrete_map={'Asiste': SECONDARY_INDIGO, 'No Asiste': PRIMARY_CYAN},
-            labels={'value': 'Cantidad de Citas', 'Hora_Bloque': 'Hora', 'variable': 'Estado'}
-        )
-        fig_hora.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            legend=dict(title_font_color="gray", font_color="gray"),
-            xaxis=dict(title_font_color="gray", tickfont_color="gray"),
-            yaxis=dict(title_font_color="gray", tickfont_color="gray")
-        )
-        st.plotly_chart(fig_hora, use_container_width=True)
-
-    with col_dia:
-        rep_dia = df_filtrado.groupby(['Dia_Semana', 'Asistencia']).size().reset_index(name='Citas')
-        fig_dia = px.bar(
-            rep_dia,
-            x='Dia_Semana',
-            y='Citas',
-            color='Asistencia',
-            title="Demanda por Día de la Semana",
-            barmode='group',
-            color_discrete_map={'Asiste': SECONDARY_INDIGO, 'No Asiste': PRIMARY_CYAN},
-            category_orders={'Dia_Semana': dias_ordenados},
-            labels={'Citas': 'Cantidad de Citas', 'Dia_Semana': 'Día', 'Asistencia': 'Estado'}
-        )
-        fig_dia.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            legend=dict(title_font_color="gray", font_color="gray"),
-            xaxis=dict(title_font_color="gray", tickfont_color="gray"),
-            yaxis=dict(title_font_color="gray", tickfont_color="gray")
-        )
-        st.plotly_chart(fig_dia, use_container_width=True)
-
-    st.markdown("---")
-
-    # 5. Tablas Desglosadas
-    st.subheader("Tablas Detalladas")
-
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "Origen x Servicio",
-        "Prestador x Servicio",
-        "Por Hora Cerrada",
-        "Por Servicio",
-        "Por Prestador"
-    ])
-
-    with tab1:
-        st.dataframe(generar_reporte_origen_servicio(df_filtrado), use_container_width=True)
-
-    with tab2:
-        st.dataframe(generar_reporte_prestador_servicio(df_filtrado), use_container_width=True)
-
-    with tab3:
-        st.dataframe(generar_reporte_por_hora_cerrada(df_filtrado), use_container_width=True)
-
-    with tab4:
-        st.dataframe(generar_reporte_servicios(df_filtrado), use_container_width=True)
-
-    with tab5:
-        st.dataframe(generar_reporte_prestadores(df_filtrado), use_container_width=True)
+        with tab5:
+            st.dataframe(generar_reporte_prestadores(df_filtrado), use_container_width=True)
 
 else:
     st.info("👈 Sube el archivo Excel en la barra lateral para generar el panel analítico.")
