@@ -228,15 +228,19 @@ if archivo_subido is not None:
             servicio_pct_alto, pct_alto = "N/A", 0
             servicio_vol_alto, vol_alto = "N/A", 0
 
-        # 3. Calcular el prestador con menor atención efectiva ('Atendidos' más bajo)
-        rep_prest_insight = generar_reporte_prestadores(df_filtrado)
-        if not rep_prest_insight.empty:
-            prestador_bajo = rep_prest_insight.sort_values(by='Atendidos', ascending=True).iloc[0]
-            nombre_prestador = prestador_bajo['Prestador']
-            total_atendidos_prestador = prestador_bajo['Atendidos']
-        else:
-            nombre_prestador = "N/A"
-            total_atendidos_prestador = 0
+        # 3. Calcular el prestador con menor atención efectiva
+        # (Solo lo calculamos y mostramos si hay múltiples prestadores y NO se ha filtrado uno solo)
+        mostrar_prestador_insight = False
+        nombre_prestador, total_atendidos_prestador = "N/A", 0
+
+        if prestador_seleccionado == "Todos":
+            rep_prest_insight = generar_reporte_prestadores(df_filtrado)
+            # Verificamos si realmente hay más de un prestador en los datos filtrados actuales
+            if len(rep_prest_insight) > 1:
+                prestador_bajo = rep_prest_insight.sort_values(by='Atendidos', ascending=True).iloc[0]
+                nombre_prestador = prestador_bajo['Prestador']
+                total_atendidos_prestador = prestador_bajo['Atendidos']
+                mostrar_prestador_insight = True
 
         # 4. Calcular el día de la semana con mayor volumen de inasistencias
         rep_dia_insight = generar_reporte_dia_semana(df_filtrado)
@@ -248,9 +252,8 @@ if archivo_subido is not None:
             nombre_dia = "N/A"
             total_inasistencias_dia = 0
 
-        # --- REDACCIÓN DINÁMICA SEGÚN EL COMPORTAMIENTO DE LOS DATOS ---
+        # --- REDACCIÓN DINÁMICA DE LOS TEXTOS ---
 
-        # Validación para Severidad de Porcentaje
         if pct_alto > 0:
             texto_severidad = (
                 f"**Severidad del Comportamiento (% Crítico):** El servicio **{servicio_pct_alto}** "
@@ -263,7 +266,6 @@ if archivo_subido is not None:
                 f"registra un **0.0% de inasistencia**, alcanzando un cumplimiento perfecto en el periodo."
             )
 
-        # Validación para Volumen de Faltas
         if vol_alto > 0:
             texto_volumen = (
                 f"**Impacto Operativo Real (Volumen de Faltas):** El servicio **{servicio_vol_alto}** "
@@ -275,7 +277,6 @@ if archivo_subido is not None:
                 f"por ausentismo en los servicios analizados, operando con saldo blanco."
             )
 
-        # Validación para el Día con Mayor Ausentismo
         if total_inasistencias_dia > 0:
             texto_dia = (
                 f"**Día con mayor ausentismo:** El día **{nombre_dia}** acumula la mayor cantidad de inasistencias "
@@ -286,13 +287,24 @@ if archivo_subido is not None:
                 f"**Análisis por Día:** No se detectan inasistencias significativas distribuidas en los días de la semana."
             )
 
-        # Mostrar los insights dinámicos limpios y profesionales
+        # Construimos la lista de viñetas dinámicamente
+        viñetas = [
+            f"* {texto_severidad}",
+            f"* {texto_volumen}"
+        ]
+
+        # Agregamos la línea del prestador SOLAMENTE si hay una comparativa real multicaso
+        if mostrar_prestador_insight:
+            viñetas.append(
+                f"**Prestador con menor flujo efectivo:** **{nombre_prestador}** registra el menor volumen "
+                f"de atenciones efectivas (*En Espera*), con **{total_atendidos_prestador:,d}** citas en comparación con el resto del equipo."
+            )
+
+        viñetas.append(f"* {texto_dia}")
+
+        # Mostrar los insights limpios
         st.info(
-            f"📌 **Resumen Ejecutivo Dinámico:**\n\n"
-            f"* {texto_severidad}\n"
-            f"* {texto_volumen}\n"
-            f"**Prestador con menor flujo efectivo:** **{nombre_prestador}** registra el menor volumen de atenciones efectivas (*En Espera*), con **{total_atendidos_prestador:,d}** citas.\n"
-            f"* {texto_dia}"
+            f"**Resumen Ejecutivo Dinámico:**\n\n" + "\n".join(viñetas)
         )
     else:
         st.warning("⚠️ No hay datos disponibles para los filtros seleccionados.")
