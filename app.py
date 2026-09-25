@@ -248,13 +248,51 @@ if archivo_subido is not None:
             nombre_dia = "N/A"
             total_inasistencias_dia = 0
 
-        # Mostrar los insights estructurados con tus directrices analíticas
+        # --- REDACCIÓN DINÁMICA SEGÚN EL COMPORTAMIENTO DE LOS DATOS ---
+
+        # Validación para Severidad de Porcentaje
+        if pct_alto > 0:
+            texto_severidad = (
+                f"**Severidad del Comportamiento (% Crítico):** El servicio **{servicio_pct_alto}** "
+                f"presenta el porcentaje más alto de inasistencia con un **{pct_alto}%**, lo que indica que el proceso "
+                f"de confirmación, recordatorio o el interés del paciente requiere atención en este rubro."
+            )
+        else:
+            texto_severidad = (
+                f"**Desempeño Destacado (% de Asistencia):** El servicio **{servicio_pct_alto}** "
+                f"registra un **0.0% de inasistencia**, alcanzando un cumplimiento perfecto en el periodo."
+            )
+
+        # Validación para Volumen de Faltas
+        if vol_alto > 0:
+            texto_volumen = (
+                f"**Impacto Operativo Real (Volumen de Faltas):** El servicio **{servicio_vol_alto}** "
+                f"acumula la mayor cantidad de horas muertas, registrando un total de **{vol_alto:,d}** citas perdidas."
+            )
+        else:
+            texto_volumen = (
+                f"**Impacto Operativo Real (Volumen de Faltas):** No se registran citas perdidas "
+                f"por ausentismo en los servicios analizados, operando con saldo blanco."
+            )
+
+        # Validación para el Día con Mayor Ausentismo
+        if total_inasistencias_dia > 0:
+            texto_dia = (
+                f"**Día con mayor ausentismo:** El día **{nombre_dia}** acumula la mayor cantidad de inasistencias "
+                f"a nivel global, sumando **{total_inasistencias_dia:,d}** casos."
+            )
+        else:
+            texto_dia = (
+                f"**Análisis por Día:** No se detectan inasistencias significativas distribuidas en los días de la semana."
+            )
+
+        # Mostrar los insights dinámicos limpios y profesionales
         st.info(
             f"📌 **Resumen Ejecutivo Dinámico:**\n\n"
-            f"**Severidad del Comportamiento (% Crítico):** El servicio **{servicio_pct_alto}** se encuentra en estado crítico con un **{pct_alto}%** de inasistencia, lo que indica que el proceso de confirmación, recordatorio o el interés del paciente está fallando masivamente en este rubro.\n"
-            f"**Impacto Operativo Real (Volumen de Faltas):** El servicio **{servicio_vol_alto}** genera la mayor cantidad de horas muertas acumuladas, registrando un total de **{vol_alto:,d}** citas perdidas.\n"
+            f"* {texto_severidad}\n"
+            f"* {texto_volumen}\n"
             f"**Prestador con menor flujo efectivo:** **{nombre_prestador}** registra el menor volumen de atenciones efectivas (*En Espera*), con **{total_atendidos_prestador:,d}** citas.\n"
-            f"**Día con mayor ausentismo:** El día **{nombre_dia}** acumula la mayor cantidad de inasistencias a nivel global, sumando **{total_inasistencias_dia:,d}** casos."
+            f"* {texto_dia}"
         )
     else:
         st.warning("⚠️ No hay datos disponibles para los filtros seleccionados.")
