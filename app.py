@@ -100,11 +100,9 @@ archivo_subido = st.sidebar.file_uploader("Sube el archivo Excel (.xlsx)", type=
 
 if archivo_subido is not None:
     # 1. Validar el tamaño del archivo en MB antes de procesar
-    # 25 MB es un límite muy seguro para evitar superar los recursos de la nube
     tamanio_bytes = archivo_subido.size
     tamanio_mb = tamanio_bytes / (1024 * 1024)
 
-    # Imprimir métricas detalladas en la consola del servidor (para ti)
     proceso = psutil.Process(os.getpid())
     memoria_actual_mb = proceso.memory_info().rss / (1024 * 1024)
     print(
@@ -122,53 +120,110 @@ if archivo_subido is not None:
         archivo_subido.seek(0)
         df = cargar_y_convertir_excel(archivo_subido)
         df_procesado = agregar_columnas_calculadas(df)
-    # 2. Sidebar Filtros Operativos
-    st.sidebar.header("Filtros Operativos")
 
-    # Filtro 1: Mes(es) ordenados cronológicamente
-    meses_ordenados = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-                       'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
-    meses_presentes = [m for m in meses_ordenados if m in df_procesado['Mes_Texto'].unique()]
-    meses_seleccionados = st.sidebar.multiselect("Mes(es):", options=meses_presentes, default=meses_presentes)
+        # ==========================================
+        # 2. SIDEBAR FILTROS OPERATIVOS (Rango de Fechas)
+        # ==========================================
+        st.sidebar.header("Filtros Operativos")
 
-    # Filtro 2: Día de la Semana
-    dias_ordenados = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
-    dias_presentes = [d for d in dias_ordenados if d in df_procesado['Dia_Semana'].unique()]
-    dia_seleccionado = st.sidebar.multiselect("Día de la Semana:", options=dias_presentes, default=dias_presentes)
+        min_date = df_procesado['Fecha de realización'].min().date()
+        max_date = df_procesado['Fecha de realización'].max().date()
 
-    # Filtro 3: Turno
-    turnos_disponibles = sorted(df_procesado['Turno'].dropna().unique().tolist())
-    turno_seleccionado = st.sidebar.multiselect("Turno Horario:", options=turnos_disponibles, default=turnos_disponibles)
+        st.sidebar.markdown("📅 **Filtrar por Rango de Fechas**")
 
-    # Filtro 4: Prestador
-    prestadores_disponibles = ["Todos"] + sorted(df_procesado['Prestador'].dropna().unique().tolist())
-    prestador_seleccionado = st.sidebar.selectbox("Prestador:", prestadores_disponibles)
+        rango_fechas = st.sidebar.date_input(
+            "Selecciona el periodo:",
+            value=(min_date, max_date),
+            min_value=min_date,
+            max_value=max_date,
+        )
 
-    # Filtro 5: Servicio (Multiselect)
-    servicios_disponibles = sorted(df_procesado['Servicio'].dropna().unique().tolist())
-    servicios_seleccionados = st.sidebar.multiselect(
-        "Servicio(s):",
-        options=servicios_disponibles,
-        default=servicios_disponibles
-    )
+        # Filtro 2: Día de la Semana
+        dias_ordenados = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+        dias_presentes = [d for d in dias_ordenados if d in df_procesado['Dia_Semana'].unique()]
+        dia_seleccionado = st.sidebar.multiselect("Día de la Semana:", options=dias_presentes, default=dias_presentes)
 
-    # Filtro 6: Canal / Origen
-    origen_disponibles = ["Todos"] + sorted(df_procesado['Origen_Resumen'].dropna().unique().tolist())
-    origen_seleccionado = st.sidebar.selectbox("Origen:", origen_disponibles)
+        # Filtro 3: Turno
+        turnos_disponibles = sorted(df_procesado['Turno'].dropna().unique().tolist())
+        turno_seleccionado = st.sidebar.multiselect("Turno Horario:", options=turnos_disponibles,
+                                                    default=turnos_disponibles)
 
-    # Aplicar Filtros Operativos
-    df_filtrado = df_procesado[
-        (df_procesado['Mes_Texto'].isin(meses_seleccionados)) &
-        (df_procesado['Dia_Semana'].isin(dia_seleccionado)) &
-        (df_procesado['Turno'].isin(turno_seleccionado)) &
-        (df_procesado['Servicio'].isin(servicios_seleccionados))
-    ]
+        # Filtro 4: Prestador
+        prestadores_disponibles = ["Todos"] + sorted(df_procesado['Prestador'].dropna().unique().tolist())
+        prestador_seleccionado = st.sidebar.selectbox("Prestador:", prestadores_disponibles)
 
-    if prestador_seleccionado != "Todos":
-        df_filtrado = df_filtrado[df_filtrado['Prestador'] == prestador_seleccionado]
+        # Filtro 5: Servicio (Multiselect)
+        servicios_disponibles = sorted(df_procesado['Servicio'].dropna().unique().tolist())
+        servicios_seleccionados = st.sidebar.multiselect(
+            "Servicio(s):",
+            options=servicios_disponibles,
+            default=servicios_disponibles
+        )
 
-    if origen_seleccionado != "Todos":
-        df_filtrado = df_filtrado[df_filtrado['Origen_Resumen'] == origen_seleccionado]
+        # Filtro 6: Canal / Origen
+        origen_disponibles = ["Todos"] + sorted(df_procesado['Origen_Resumen'].dropna().unique().tolist())
+        origen_seleccionado = st.sidebar.selectbox("Origen:", origen_disponibles)
+
+        # --- APLICAR FILTROS OPERATIVOS (BLINDADO) ---
+        if isinstance(rango_fechas, tuple):
+            if len(rango_fechas) == 2:
+                fecha_inicio, fecha_fin = rango_fechas
+            elif len(rango_fechas) == 1:
+                fecha_inicio = fecha_fin = rango_fechas[0]
+            else:
+                fecha_inicio, fecha_fin = min_date, max_date
+        else:
+            fecha_inicio = fecha_fin = rango_fechas if rango_fechas else min_date
+
+        # Si por alguna razón el usuario deja una fecha vacía, asignamos los límites
+        if not fecha_inicio:
+            fecha_inicio = min_date
+        if not fecha_fin:
+            fecha_fin = max_date
+
+        df_filtrado = df_procesado[
+            (df_procesado['Fecha de realización'].dt.date >= fecha_inicio) &
+            (df_procesado['Fecha de realización'].dt.date <= fecha_fin) &
+            (df_procesado['Dia_Semana'].isin(dia_seleccionado)) &
+            (df_procesado['Turno'].isin(turno_seleccionado)) &
+            (df_procesado['Servicio'].isin(servicios_seleccionados))
+            ]
+
+        if prestador_seleccionado != "Todos":
+            df_filtrado = df_filtrado[
+                df_filtrado['Prestadores'] == prestador_seleccionado] if 'Prestadores' in df_filtrado.columns else \
+            df_filtrado[df_filtrado['Prestador'] == prestador_seleccionado]
+
+        if origen_seleccionado != "Todos":
+            df_filtrado = df_filtrado[df_filtrado['Origen_Resumen'] == origen_seleccionado]
+
+        # Botón de Descarga en la Barra Lateral
+        st.sidebar.markdown("---")
+        st.sidebar.header("Exportar Reporte")
+
+        excel_bytes = generar_excel_resumen_ejecutivo(df_filtrado)
+
+        st.sidebar.download_button(
+            label="Descargar Resumen Ejecutivo (.xlsx)",
+            data=excel_bytes,
+            file_name="resumen_ejecutivo_reservas.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
+
+        # Botón de Descarga en la Barra Lateral
+        st.sidebar.markdown("---")
+        st.sidebar.header("Exportar Reporte")
+
+        excel_bytes = generar_excel_resumen_ejecutivo(df_filtrado)
+
+        st.sidebar.download_button(
+            label="Descargar Resumen Ejecutivo (.xlsx)",
+            data=excel_bytes,
+            file_name="resumen_ejecutivo_reservas.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
 
     # Botón de Descarga en la Barra Lateral
     st.sidebar.markdown("---")
