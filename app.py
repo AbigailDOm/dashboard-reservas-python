@@ -231,22 +231,25 @@ if archivo_subido is not None:
         # SECCIÓN: INSIGHTS AUTOMÁTICOS INTELIGENTES
         # ==========================================
 
-        st.subheader("Hallazgos Clave del Periodo Seleccionado")
+        st.subheader("Hallazgos del Periodo")
 
         if not df_filtrado.empty:
             rep_serv_insight = generar_reporte_servicios(df_filtrado)
 
             if not rep_serv_insight.empty:
-                # 1. Porcentaje más alto de inasistencia (Severidad del Comportamiento)
+                total_servicios_analizados = len(rep_serv_insight)
+
+                # 1. Porcentaje de inasistencia
                 peor_pct_row = rep_serv_insight.sort_values(by='% Inasistencia', ascending=False).iloc[0]
                 servicio_pct_alto = peor_pct_row['Servicio']
                 pct_alto = peor_pct_row['% Inasistencia']
 
-                # 2. Mayor volumen absoluto de inasistencias (Impacto Operativo Real)
+                # 2. Mayor volumen absoluto de inasistencias
                 peor_vol_row = rep_serv_insight.sort_values(by='Inasistencias', ascending=False).iloc[0]
                 servicio_vol_alto = peor_vol_row['Servicio']
                 vol_alto = peor_vol_row['Inasistencias']
             else:
+                total_servicios_analizados = 0
                 servicio_pct_alto, pct_alto = "N/A", 0
                 servicio_vol_alto, vol_alto = "N/A", 0
 
@@ -272,30 +275,55 @@ if archivo_subido is not None:
                 nombre_dia = "N/A"
                 total_inasistencias_dia = 0
 
-            # --- REDACCIÓN DINÁMICA DE LOS TEXTOS ---
+            # --- REDACCIÓN DINÁMICA ADAPTATIVA (COMPARATIVA VS INDIVIDUAL) ---
 
-            if pct_alto > 0:
-                texto_severidad = (
-                    f"**Severidad del Comportamiento (% Crítico):** El servicio **{servicio_pct_alto}** "
-                    f"presenta el porcentaje más alto de inasistencia con un **{pct_alto}%**, lo que indica que el proceso "
-                    f"de confirmación, recordatorio o el interés del paciente requiere atención en este rubro."
-                )
-            else:
-                texto_severidad = (
-                    f"**Desempeño Destacado (% de Asistencia):** El servicio **{servicio_pct_alto}** "
-                    f"registra un **0.0% de inasistencia**, alcanzando un cumplimiento perfecto en el periodo."
-                )
+            if total_servicios_analizados > 1:
+                # Redacción original cuando hay varios servicios para comparar
+                if pct_alto > 0:
+                    texto_severidad = (
+                        f"**Severidad del Comportamiento (% Crítico):** El servicio **{servicio_pct_alto}** "
+                        f"presenta el porcentaje más alto de inasistencia con un **{pct_alto}%**, lo que indica que el proceso "
+                        f"de confirmación, recordatorio o el interés del paciente requiere atención en este rubro."
+                    )
+                else:
+                    texto_severidad = (
+                        f"**Desempeño Destacado (% de Asistencia):** El servicio **{servicio_pct_alto}** "
+                        f"registra un **0.0% de inasistencia**, alcanzando un cumplimiento perfecto en el periodo."
+                    )
 
-            if vol_alto > 0:
-                texto_volumen = (
-                    f"**Impacto Operativo Real (Volumen de Faltas):** El servicio **{servicio_vol_alto}** "
-                    f"acumula la mayor cantidad de horas muertas, registrando un total de **{vol_alto:,d}** citas perdidas."
-                )
+                if vol_alto > 0:
+                    texto_volumen = (
+                        f"**Impacto Operativo Real (Volumen de Faltas):** El servicio **{servicio_vol_alto}** "
+                        f"acumula la mayor cantidad de horas muertas, registrando un total de **{vol_alto:,d}** citas perdidas."
+                    )
+                else:
+                    texto_volumen = (
+                        f"**Impacto Operativo Real (Volumen de Faltas):** No se registran citas perdidas "
+                        f"por ausentismo en los servicios analizados, operando con saldo blanco."
+                    )
             else:
-                texto_volumen = (
-                    f"**Impacto Operativo Real (Volumen de Faltas):** No se registran citas perdidas "
-                    f"por ausentismo en los servicios analizados, operando con saldo blanco."
-                )
+                # Redacción descriptiva individual cuando solo se analiza un servicio (ej. filtro de 1 prestador con 1 servicio)
+                if pct_alto > 0:
+                    texto_severidad = (
+                        f"**Comportamiento del Servicio:** El servicio analizado (**{servicio_pct_alto}**) "
+                        f"registra un porcentaje de inasistencia del **{pct_alto}%** en el periodo seleccionado."
+                    )
+                else:
+                    texto_severidad = (
+                        f"**Comportamiento del Servicio:** El servicio analizado (**{servicio_pct_alto}**) "
+                        f"registra un **0.0% de inasistencia**, alcanzando un cumplimiento perfecto."
+                    )
+
+                if vol_alto > 0:
+                    texto_volumen = (
+                        f"**Volumen Operativo del Servicio:** El servicio (**{servicio_vol_alto}**) "
+                        f"acumula un total de **{vol_alto:,d}** citas perdidas en el periodo."
+                    )
+                else:
+                    texto_volumen = (
+                        f"**Volumen Operativo del Servicio:** El servicio analizado opera con saldo blanco "
+                        f"sin registrar citas perdidas por ausentismo."
+                    )
 
             if total_inasistencias_dia > 0:
                 texto_dia = (
