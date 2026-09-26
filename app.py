@@ -24,52 +24,76 @@ st.set_page_config(
 )
 
 # ==========================================
-# 🔐 CONFIGURACIÓN DEL SISTEMA DE LOGIN
+# 🔐 CONFIGURACIÓN DE LOGIN ESTILO CORPORATIVO
 # ==========================================
 try:
-    credentials = {
-        "usernames": {
-            username: dict(user_data)
-            for username, user_data in st.secrets["credentials"]["usernames"].items()
-        }
-    }
+    usuarios_permitidos = st.secrets["credentials"]["usernames"]
 except Exception as e:
     st.error(f"⚠️ Error crítico al cargar credenciales: {e}")
     st.stop()
 
-authenticator = stauth.Authenticate(
-    credentials,
-    cookie_name="imo_dashboard_cookie",
-    key="imo_super_secret_key",
-    cookie_expiry_days=1
-)
+# Inicializamos el estado de sesión si no existe
+if 'authentication_status' not in st.session_state:
+    st.session_state['authentication_status'] = None
+    st.session_state['name'] = None
+    st.session_state['username'] = None
 
-# Renderizado moderno compatible con la versión actual de la librería
-try:
-    authenticator.login(location='sidebar', key='login_sidebar_unico')
-except Exception:
-    pass  # Previene interrupciones por excepciones internas del componente
+# Si no ha iniciado sesión, mostramos la tarjeta de login centrada estilo corporativo
+if st.session_state['authentication_status'] != True:
 
-authentication_status = st.session_state.get('authentication_status')
-name = st.session_state.get('name')
-username = st.session_state.get('username')
+    # Creamos un diseño centrado usando columnas vacías a los lados
+    _, col_centro, _ = st.columns([1, 1.5, 1])
 
-if authentication_status == False:
-    st.sidebar.error('Correo o contraseña incorrectos')
-    st.warning("🔒 Por favor, ingresa tu correo institucional y contraseña en la barra lateral.")
-    st.stop()
-elif authentication_status == None:
-    st.sidebar.warning('Por favor, ingresa tus credenciales de acceso.')
-    st.info("👋 **Bienvenido al Panel Analítico Institucional (IMO).** Inicia sesión con tu correo corporativo.")
-    st.stop()
+    with col_centro:
+        st.markdown("<br><br>", unsafe_allow_html=True)
+
+        # Contenedor visual tipo tarjeta limpia
+        with st.container():
+            st.markdown("""
+                <div style="padding: 30px; border-radius: 12px; border: 1px solid rgba(128,128,128,0.2); background-color: var(--background-secondary-color);">
+                    <h2 style="text-align: center; margin-bottom: 0px;">Iniciar Sesión</h2>
+                    <p style="text-align: center; color: gray; font-size: 14px; margin-top: 5px;">Panel Analítico Institucional (IMO)</p>
+                </div>
+            """, unsafe_allow_html=True)
+
+            # Formulario limpio de acceso
+            with st.form("form_login_corporativo"):
+                email_ingresado = st.text_input("Correo Institucional", placeholder="usuario@imo.com.mx")
+                password_ingresada = st.text_input("Contraseña", type="password", placeholder="••••••••")
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                submit_login = st.form_submit_button("Iniciar Sesión", use_container_width=True)
+
+                if submit_login:
+                    if email_ingresado in usuarios_permitidos:
+                        stored_password = usuarios_permitidos[email_ingresado]["password"]
+                        if password_ingresada == stored_password:
+                            st.session_state['authentication_status'] = True
+                            st.session_state['name'] = usuarios_permitidos[email_ingresado]["name"]
+                            st.session_state['username'] = email_ingresado
+                            st.rerun()
+                        else:
+                            st.error("❌ Contraseña incorrecta.")
+                    else:
+                        st.error("🚫 El correo ingresado no está autorizado.")
+
+            if st.session_state['authentication_status'] == False:
+                st.warning("Por favor, verifica tus credenciales.")
+
+    st.stop()  # Detiene la ejecución hasta que se autentique con éxito
+
 else:
     # -------------------------------------------------------------------------
-    # A PARTIR DE AQUÍ CORRE TODA LA LÓGICA DE LA APP CUANDO EL LOGIN ES EXITOSO
+    # ACCESO EXITOSO: BARRA LATERAL CON BIENVENIDA Y CIERRE DE SESIÓN
     # -------------------------------------------------------------------------
+    st.sidebar.markdown(f"👤 *Bienvenido, {st.session_state['name']}*")
 
-    # Botón de cierre de sesión (Logout) en la barra lateral
-    authenticator.logout('Cerrar Sesión', 'sidebar', key='unique_logout_key')
-    st.sidebar.markdown(f"👤 *Bienvenido, {name}*")
+    if st.sidebar.button("Cerrar Sesión", use_container_width=True):
+        st.session_state['authentication_status'] = None
+        st.session_state['name'] = None
+        st.session_state['username'] = None
+        st.rerun()
+
     st.sidebar.markdown("---")
 
 
