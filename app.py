@@ -46,7 +46,7 @@ authenticator = stauth.Authenticate(
 )
 
 # Renderizamos el widget de login especificando el título y la ubicación correcta para esta versión
-name, authentication_status, username = authenticator.login('Login', 'sidebar')
+name, authentication_status, username = authenticator.login(location='sidebar')
 
 if authentication_status == False:
     st.sidebar.error('Correo o contraseña incorrectos')
