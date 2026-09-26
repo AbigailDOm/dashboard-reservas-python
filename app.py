@@ -27,7 +27,6 @@ st.set_page_config(
 # 🔐 CONFIGURACIÓN DEL SISTEMA DE LOGIN
 # ==========================================
 try:
-    # Convertimos explícitamente el secreto de Streamlit a un diccionario mutable estándar
     credentials = {
         "usernames": {
             username: dict(user_data)
@@ -45,8 +44,15 @@ authenticator = stauth.Authenticate(
     cookie_expiry_days=1
 )
 
-# Renderizamos el widget de login especificando el título y la ubicación correcta para esta versión
-name, authentication_status, username = authenticator.login(location='sidebar')
+# Renderizado moderno compatible con la versión actual de la librería
+try:
+    authenticator.login(location='sidebar', key='login_sidebar_unico')
+except Exception:
+    pass  # Previene interrupciones por excepciones internas del componente
+
+authentication_status = st.session_state.get('authentication_status')
+name = st.session_state.get('name')
+username = st.session_state.get('username')
 
 if authentication_status == False:
     st.sidebar.error('Correo o contraseña incorrectos')
