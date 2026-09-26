@@ -195,7 +195,6 @@ else:
             min_date = df_procesado['Fecha de realización'].min().date()
             max_date = df_procesado['Fecha de realización'].max().date()
 
-            st.sidebar.markdown("📅 **Filtrar por Rango de Fechas**")
             rango_fechas = st.sidebar.date_input(
                 "Selecciona el periodo:",
                 value=(min_date, max_date),
