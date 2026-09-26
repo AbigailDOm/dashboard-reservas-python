@@ -24,7 +24,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# 🔐 CONFIGURACIÓN DE LOGIN ESTILO CORPORATIVO
+# CONFIGURACIÓN DE LOGIN CORPORATIVO UNIFICADO
 # ==========================================
 try:
     usuarios_permitidos = st.secrets["credentials"]["usernames"]
@@ -32,61 +32,62 @@ except Exception as e:
     st.error(f"⚠️ Error crítico al cargar credenciales: {e}")
     st.stop()
 
-# Inicializamos el estado de sesión si no existe
 if 'authentication_status' not in st.session_state:
     st.session_state['authentication_status'] = None
     st.session_state['name'] = None
     st.session_state['username'] = None
 
-# Si no ha iniciado sesión, mostramos la tarjeta de login centrada estilo corporativo
 if st.session_state['authentication_status'] != True:
-
-    # Creamos un diseño centrado usando columnas vacías a los lados
-    _, col_centro, _ = st.columns([1, 1.5, 1])
+    _, col_centro, _ = st.columns([1, 1.2, 1])
 
     with col_centro:
-        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
 
-        # Contenedor visual tipo tarjeta limpia
-        with st.container():
-            st.markdown("""
-                <div style="padding: 30px; border-radius: 12px; border: 1px solid rgba(128,128,128,0.2); background-color: var(--background-secondary-color);">
-                    <h2 style="text-align: center; margin-bottom: 0px;">Iniciar Sesión</h2>
-                    <p style="text-align: center; color: gray; font-size: 14px; margin-top: 5px;">Panel Analítico Institucional (IMO)</p>
-                </div>
-            """, unsafe_allow_html=True)
+        # Contenedor visual único con CSS personalizado para estilizar el formulario nativo
+        st.markdown("""
+            <style>
+                [data-testid="stForm"] {
+                    background-color: var(--background-secondary-color);
+                    padding: 30px;
+                    border-radius: 16px;
+                    border: 1px solid rgba(128, 128, 128, 0.2);
+                    box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.08);
+                }
+            </style>
+        """, unsafe_allow_html=True)
 
-            # Formulario limpio de acceso
-            with st.form("form_login_corporativo"):
-                email_ingresado = st.text_input("Correo Institucional", placeholder="usuario@imo.com.mx")
-                password_ingresada = st.text_input("Contraseña", type="password", placeholder="••••••••")
+        with st.form("form_login_unificado"):
+            st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>Iniciar Sesión</h2>",
+                        unsafe_allow_html=True)
+            st.markdown(
+                "<p style='text-align: center; color: gray; font-size: 14px; margin-top: 5px; margin-bottom: 25px;'>Panel Analítico Institucional (IMO)</p>",
+                unsafe_allow_html=True)
 
-                st.markdown("<br>", unsafe_allow_html=True)
-                submit_login = st.form_submit_button("Iniciar Sesión", use_container_width=True)
+            email_ingresado = st.text_input("Correo Institucional", placeholder="usuario@imo.com.mx")
+            password_ingresada = st.text_input("Contraseña", type="password", placeholder="••••••••")
 
-                if submit_login:
-                    if email_ingresado in usuarios_permitidos:
-                        stored_password = usuarios_permitidos[email_ingresado]["password"]
-                        if password_ingresada == stored_password:
-                            st.session_state['authentication_status'] = True
-                            st.session_state['name'] = usuarios_permitidos[email_ingresado]["name"]
-                            st.session_state['username'] = email_ingresado
-                            st.rerun()
-                        else:
-                            st.error("❌ Contraseña incorrecta.")
+            st.markdown("<br>", unsafe_allow_html=True)
+            submit_login = st.form_submit_button("Iniciar Sesión", use_container_width=True)
+
+            if submit_login:
+                if email_ingresado in usuarios_permitidos:
+                    stored_password = usuarios_permitidos[email_ingresado]["password"]
+                    if password_ingresada == stored_password:
+                        st.session_state['authentication_status'] = True
+                        st.session_state['name'] = usuarios_permitidos[email_ingresado]["name"]
+                        st.session_state['username'] = email_ingresado
+                        st.rerun()
                     else:
-                        st.error("🚫 El correo ingresado no está autorizado.")
+                        st.error("❌ Contraseña incorrecta.")
+                else:
+                    st.error("🚫 El correo ingresado no está autorizado.")
 
-            if st.session_state['authentication_status'] == False:
-                st.warning("Por favor, verifica tus credenciales.")
+        if st.session_state['authentication_status'] == False:
+            st.warning("Por favor, verifica tus credenciales.")
 
-    st.stop()  # Detiene la ejecución hasta que se autentique con éxito
-
+    st.stop()
 else:
-    # -------------------------------------------------------------------------
-    # ACCESO EXITOSO: BARRA LATERAL CON BIENVENIDA Y CIERRE DE SESIÓN
-    # -------------------------------------------------------------------------
-    st.sidebar.markdown(f"👤 *Bienvenido, {st.session_state['name']}*")
+    st.sidebar.markdown(f"*{st.session_state['name']}*")
 
     if st.sidebar.button("Cerrar Sesión", use_container_width=True):
         st.session_state['authentication_status'] = None
