@@ -32,32 +32,23 @@ st.set_page_config(
 )
 
 # ==========================================
-# CONFIGURACIÓN DEL SISTEMA DE LOGIN
+# 🔐 CONFIGURACIÓN DEL SISTEMA DE LOGIN
 # ==========================================
 try:
     inicializar_bd()
 
-    # Cargamos el diccionario y hasheamos las contraseñas al vuelo para cumplir con stauth
-    raw_credentials = {
+    # Cargamos las credenciales directamente desde st.secrets
+    credentials = {
         "usernames": {
             username: dict(user_data)
             for username, user_data in st.secrets["credentials"]["usernames"].items()
         }
     }
-
-    # Hasheamos las contraseñas de forma segura requerida por la librería
-    passwords_to_hash = [user["password"] for user in raw_credentials["usernames"].values()]
-    hashed_passwords = stauth.Hasher(passwords_to_hash).generate()
-
-    for (username, user_data), hashed_pw in zip(raw_credentials["usernames"].items(), hashed_passwords):
-        user_data["password"] = hashed_pw
-
-    credentials = raw_credentials
-
 except Exception as e:
     st.error(f"⚠️ Error crítico al cargar secretos: {e}")
     st.stop()
 
+# Inicializamos el autenticador permitiendo el manejo automático de contraseñas de la versión actual
 authenticator = stauth.Authenticate(
     credentials,
     cookie_name="imo_dashboard_cookie",
