@@ -25,6 +25,8 @@ from src.database import (
 )
 import sqlite3
 
+ADMIN_USER = "vanessa.dominguez@imoiap.com.mx"
+
 # Configuración de página (Debe ser lo primero de todo)
 st.set_page_config(
     page_title="Panel Analítico de Reservas IMO",
@@ -130,12 +132,14 @@ else:
     username = st.session_state['username']
     name = st.session_state['name']
 
-    st.sidebar.markdown(f"*{name}*")
+    ADMIN_USER = "vanessa.dominguez@imoiap.com.mx"
+
+    st.sidebar.markdown(f"👤 *Bienvenido, {name}*")
 
     modo_vista = "Tablero Analítico"
-    if username == "vanessa.dominguez@imoiap.com.mx":
+    if username == ADMIN_USER:
         st.sidebar.markdown("---")
-        st.sidebar.subheader("Panel de Administrador")
+        st.sidebar.subheader("🛠️ Panel de Administrador")
         modo_vista = st.sidebar.radio("Sección:",
                                       ["Tablero Analítico", "Cargar Reporte AgendaPro", "Bitácora de Auditoría"])
 
@@ -151,8 +155,8 @@ else:
     # -------------------------------------------------------------------------
     # VISTA 1: CARGAR REPORTE AGENDAPRO (Solo Administrador)
     # -------------------------------------------------------------------------
-    if modo_vista == "Cargar Reporte AgendaPro" and username == "v.dominguez@imo.com.mx":
-        st.title("Ingesta de Datos (AgendaPro)")
+    if modo_vista == "Cargar Reporte AgendaPro" and username == ADMIN_USER:
+        st.title("📂 Ingesta de Datos (AgendaPro)")
         st.markdown(
             "Sube los reportes en Excel para alimentar la base de datos central de la institución. Los datos se acumularán de forma histórica.")
 
@@ -188,8 +192,8 @@ else:
     # -------------------------------------------------------------------------
     # VISTA 2: BITÁCORA DE AUDITORÍA (Solo Administrador)
     # -------------------------------------------------------------------------
-    if modo_vista == "Bitácora de Auditoría" and username == "v.dominguez@imo.com.mx":
-        st.title("Bitácora de Auditoría y Actividad")
+    if modo_vista == "Bitácora de Auditoría" and username == ADMIN_USER:
+        st.title("🕵️‍♂️ Bitácora de Auditoría y Actividad")
         st.markdown("Monitoreo en tiempo real de los accesos y movimientos de los usuarios en la plataforma.")
 
         try:
@@ -208,7 +212,6 @@ else:
             st.error(f"Error al cargar la bitácora: {e}")
 
         st.stop()
-
 
     # -------------------------------------------------------------------------
     # VISTA 3: TABLERO ANALÍTICO PRINCIPAL (Con lectura automática desde SQL)
