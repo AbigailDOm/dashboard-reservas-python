@@ -133,7 +133,7 @@ else:
     st.sidebar.markdown(f"*{name}*")
 
     modo_vista = "Tablero Analítico"
-    if username == "v.dominguez@imo.com.mx":
+    if username == "vanessa.dominguez@imoiap.com.mx":
         st.sidebar.markdown("---")
         st.sidebar.subheader("Panel de Administrador")
         modo_vista = st.sidebar.radio("Sección:",
