@@ -96,7 +96,16 @@ if st.session_state['authentication_status'] != True:
             if submit_login:
                 if email_ingresado in credentials["usernames"]:
                     stored_password = credentials["usernames"][email_ingresado]["password"]
-                    if password_ingresada == stored_password:
+
+                    # Verificamos la contraseña en texto plano contra el hash almacenado usando la herramienta de la librería
+                    password_valida = False
+                    try:
+                        password_valida = stauth.Hasher.check_pw(password_ingresada, stored_password)
+                    except Exception:
+                        # Fallback por si la contraseña en secrets estuviera accidentalmente en texto plano
+                        password_valida = (password_ingresada == stored_password)
+
+                    if password_valida:
                         st.session_state['authentication_status'] = True
                         st.session_state['name'] = credentials["usernames"][email_ingresado]["name"]
                         st.session_state['username'] = email_ingresado
