@@ -32,12 +32,12 @@ st.set_page_config(
 )
 
 # ==========================================
-# CONFIGURACIÓN DEL SISTEMA DE LOGIN
+# 🔐 CONFIGURACIÓN DEL SISTEMA DE LOGIN
 # ==========================================
 try:
     inicializar_bd()
 
-    # Cargamos credenciales limpias y mutables directamente desde st.secrets
+    # Definimos explícitamente el diccionario de credenciales para la autenticación
     credentials = {
         "usernames": {
             username: dict(user_data)
