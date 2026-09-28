@@ -19,8 +19,6 @@ from src.report import (
 from src.database import (
     inicializar_bd,
     registrar_actividad,
-    sincronizar_usuarios_desde_secrets,
-    obtener_usuarios_bd,
     guardar_reservas_en_bd,
     cargar_reservas_desde_bd,
     DB_NAME
@@ -34,15 +32,20 @@ st.set_page_config(
 )
 
 # ==========================================
-# 🔐 INICIALIZACIÓN DE BASE DE DATOS Y LOGIN
+# CONFIGURACIÓN DEL SISTEMA DE LOGIN
 # ==========================================
 try:
     inicializar_bd()
-    usuarios_secrets = st.secrets["credentials"]["usernames"]
-    sincronizar_usuarios_desde_secrets(usuarios_secrets)
-    credentials = obtener_usuarios_bd()
+
+    # Cargamos credenciales limpias y mutables directamente desde st.secrets
+    credentials = {
+        "usernames": {
+            username: dict(user_data)
+            for username, user_data in st.secrets["credentials"]["usernames"].items()
+        }
+    }
 except Exception as e:
-    st.error(f"⚠️ Error crítico al inicializar la base de datos o secretos: {e}")
+    st.error(f"⚠️ Error crítico al cargar secretos: {e}")
     st.stop()
 
 authenticator = stauth.Authenticate(
@@ -117,7 +120,7 @@ else:
     username = st.session_state['username']
     name = st.session_state['name']
 
-    st.sidebar.markdown(f"{name}*")
+    st.sidebar.markdown(f"*{name}*")
 
     modo_vista = "Tablero Analítico"
     if username == "v.dominguez@imo.com.mx":
@@ -161,7 +164,7 @@ else:
                         st.error(f"❌ Error al procesar el archivo: {e}")
 
         st.markdown("---")
-        if st.button("Reiniciar / Vaciar Base de Datos de Reservas"):
+        if st.button("⚠️ Reiniciar / Vaciar Base de Datos de Reservas"):
             conn = sqlite3.connect(DB_NAME)
             cursor = conn.cursor()
             cursor.execute("DELETE FROM reservas")
@@ -261,7 +264,6 @@ else:
     df_procesado = cargar_reservas_desde_bd()
 
     if not df_procesado.empty:
-        # Registrar consulta en la auditoría (solo una vez por sesión)
         if 'consulta_registrada' not in st.session_state:
             registrar_actividad(username, name, "CONSULTA_TABLERO",
                                 f"Visualizó tablero con {len(df_procesado)} registros en SQL")
@@ -272,7 +274,6 @@ else:
 
         min_date = df_procesado['Fecha de realización'].min().date()
         max_date = df_procesado['Fecha de realización'].max().date()
-
         rango_fechas = st.sidebar.date_input(
             "Selecciona el periodo:",
             value=(min_date, max_date),
