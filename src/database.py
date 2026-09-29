@@ -73,11 +73,30 @@ def guardar_reservas_en_bd(df_procesado: pd.DataFrame):
 
 
 def cargar_reservas_desde_bd() -> pd.DataFrame:
-    """Carga todo el histórico de reservas desde SQLite y lo convierte a DataFrame de pandas."""
+    """Carga todo el histórico de reservas desde SQLite y estandariza los nombres de columnas para el tablero."""
     conn = sqlite3.connect(DB_NAME)
     df = pd.read_sql("SELECT * FROM reservas", conn)
     conn.close()
 
     if not df.empty:
-        df['Fecha de realización'] = pd.to_datetime(df['fecha_realizacion'])
+        # Mapeamos o normalizamos nombres por si vienen en minúsculas desde SQL
+        renombres = {
+            'fecha_realizacion': 'Fecha de realización',
+            'prestador': 'Prestador',
+            'servicio': 'Servicio',
+            'origen_resumen': 'Origen_Resumen',
+            'asistencia': 'Asistencia',
+            'dia_semana': 'Dia_Semana',
+            'turno': 'Turno'
+        }
+        df = df.rename(columns=renombres)
+
+        # Si la columna Dia_Semana no existiera en viejos registros, la recalculamos por seguridad
+        if 'Dia_Semana' not in df.columns and 'Fecha de realización' in df.columns:
+            df['Fecha de realización'] = pd.to_datetime(df['Fecha de realización'])
+            dias_map = {0: 'lunes', 1: 'martes', 2: 'miércoles', 3: 'jueves', 4: 'viernes', 5: 'sábado', 6: 'domingo'}
+            df['Dia_Semana'] = df['Fecha de realización'].dt.weekday.map(dias_map)
+
+        df['Fecha de realización'] = pd.to_datetime(df['Fecha de realización'])
+
     return df
