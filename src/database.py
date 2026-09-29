@@ -6,7 +6,7 @@ DB_NAME = "imo_reservas.db"
 
 
 def inicializar_bd():
-    """Crea las tablas necesarias para reservas y auditoría si no existen."""
+    """Crea las tablas necesarias para auditoría y asegura la estructura de reservas."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
@@ -19,20 +19,6 @@ def inicializar_bd():
             accion TEXT,
             detalles TEXT,
             timestamp TEXT
-        )
-    ''')
-
-    # 2. Tabla de Reservas (Histórico centralizado de reportes)
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS reservas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            fecha_realizacion TEXT,
-            prestador TEXT,
-            servicio TEXT,
-            origen_resumen TEXT,
-            asistencia TEXT,
-            dia_semana TEXT,
-            turno TEXT
         )
     ''')
 
@@ -57,44 +43,40 @@ def registrar_actividad(username, nombre, accion, detalles=""):
 
 
 def guardar_reservas_en_bd(df_procesado: pd.DataFrame):
-    """Inserta de forma masiva los registros procesados con todas sus columnas calculadas en SQLite."""
+    """Inserta de forma masiva los registros procesados creando o añadiendo a la tabla reservas en SQLite."""
     conn = sqlite3.connect(DB_NAME)
 
-    # Creamos una copia para evitar modificar el original y convertimos fechas a texto
     df_sql = df_procesado.copy()
     if 'Fecha de realización' in df_sql.columns:
         df_sql['Fecha de realización'] = df_sql['Fecha de realización'].dt.strftime('%Y-%m-%d %H:%M:%S')
 
-    # 'append' acumula los nuevos registros históricos sin borrar los anteriores
-    df_sql.to_sql('reservas', conn, if_exists='append', index=False)
+    # 'append' si la tabla ya existe con todas las columnas, o 'replace' si es la primera carga limpia
+    try:
+        df_sql.to_sql('reservas', conn, if_exists='append', index=False)
+    except Exception:
+        # Si hay discrepancia de columnas previa, recreamos la tabla limpia con el nuevo esquema completo
+        df_sql.to_sql('reservas', conn, if_exists='replace', index=False)
+
     conn.close()
 
 
 def cargar_reservas_desde_bd() -> pd.DataFrame:
     """Carga todo el histórico de reservas desde SQLite y estandariza los nombres de columnas para el tablero."""
     conn = sqlite3.connect(DB_NAME)
-    df = pd.read_sql("SELECT * FROM reservas", conn)
+    try:
+        df = pd.read_sql("SELECT * FROM reservas", conn)
+    except Exception:
+        df = pd.DataFrame()
     conn.close()
 
     if not df.empty:
-        # Mapeamos o normalizamos nombres por si vienen en minúsculas desde SQL
-        renombres = {
-            'fecha_realizacion': 'Fecha de realización',
-            'prestador': 'Prestador',
-            'servicio': 'Servicio',
-            'origen_resumen': 'Origen_Resumen',
-            'asistencia': 'Asistencia',
-            'dia_semana': 'Dia_Semana',
-            'turno': 'Turno'
-        }
-        df = df.rename(columns=renombres)
-
-        # Si la columna Dia_Semana no existiera en viejos registros, la recalculamos por seguridad
-        if 'Dia_Semana' not in df.columns and 'Fecha de realización' in df.columns:
+        if 'Fecha de realización' in df.columns:
             df['Fecha de realización'] = pd.to_datetime(df['Fecha de realización'])
+        elif 'fecha_realizacion' in df.columns:
+            df['Fecha de realización'] = pd.to_datetime(df['fecha_realizacion'])
+
+        if 'Dia_Semana' not in df.columns and 'Fecha de realización' in df.columns:
             dias_map = {0: 'lunes', 1: 'martes', 2: 'miércoles', 3: 'jueves', 4: 'viernes', 5: 'sábado', 6: 'domingo'}
             df['Dia_Semana'] = df['Fecha de realización'].dt.weekday.map(dias_map)
-
-        df['Fecha de realización'] = pd.to_datetime(df['Fecha de realización'])
 
     return df
