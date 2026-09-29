@@ -57,17 +57,15 @@ def registrar_actividad(username, nombre, accion, detalles=""):
 
 
 def guardar_reservas_en_bd(df_procesado: pd.DataFrame):
-    """Inserta de forma masiva los registros limpios en la tabla reservas de SQLite."""
+    """Inserta de forma masiva los registros procesados con todas sus columnas calculadas en SQLite."""
     conn = sqlite3.connect(DB_NAME)
-    df_sql = pd.DataFrame({
-        'fecha_realizacion': df_procesado['Fecha de realización'].dt.strftime('%Y-%m-%d %H:%M:%S'),
-        'prestador': df_procesado['Prestador'],
-        'servicio': df_procesado['Servicio'],
-        'origen_resumen': df_procesado['Origen_Resumen'],
-        'asistencia': df_procesado['Asistencia'],
-        'dia_semana': df_procesado['Dia_Semana'],
-        'turno': df_procesado['Turno']
-    })
+
+    # Creamos una copia para evitar modificar el original y convertimos fechas a texto
+    df_sql = df_procesado.copy()
+    if 'Fecha de realización' in df_sql.columns:
+        df_sql['Fecha de realización'] = df_sql['Fecha de realización'].dt.strftime('%Y-%m-%d %H:%M:%S')
+
+    # 'append' acumula los nuevos registros históricos sin borrar los anteriores
     df_sql.to_sql('reservas', conn, if_exists='append', index=False)
     conn.close()
 
